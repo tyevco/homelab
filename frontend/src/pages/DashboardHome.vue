@@ -227,8 +227,9 @@ export default {
                     let urlObj = new URL(url);
                     let endpoint = urlObj.host;
 
-                    // Remove the stack list and status list of the removed agent
+                    // Remove the stack list and container list of the removed agent
                     delete this.$root.allAgentStackList[endpoint];
+                    delete this.$root.allAgentLxcContainerList[endpoint];
                 }
             });
         },
