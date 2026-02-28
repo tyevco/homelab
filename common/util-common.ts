@@ -51,6 +51,11 @@ export const CREATED_FILE = 1;
 export const CREATED_STACK = 2;
 export const RUNNING = 3;
 export const EXITED = 4;
+export const FROZEN = 5;
+
+// Stack Types
+export const STACK_TYPE_DOCKER = "docker";
+export const STACK_TYPE_LXC = "lxc";
 
 export function statusName(status : number) : string {
     switch (status) {
@@ -62,6 +67,8 @@ export function statusName(status : number) : string {
             return "running";
         case EXITED:
             return "exited";
+        case FROZEN:
+            return "frozen";
         default:
             return "unknown";
     }
@@ -77,6 +84,8 @@ export function statusNameShort(status : number) : string {
             return "active";
         case EXITED:
             return "exited";
+        case FROZEN:
+            return "frozen";
         default:
             return "?";
     }
@@ -92,6 +101,8 @@ export function statusColor(status : number) : string {
             return "primary";
         case EXITED:
             return "danger";
+        case FROZEN:
+            return "warning";
         default:
             return "secondary";
     }
@@ -211,6 +222,14 @@ export function getContainerTerminalName(endpoint : string, container : string) 
 
 export function getContainerExecTerminalName(endpoint : string, stackName : string, container : string, index : number) {
     return "container-exec-" + endpoint + "-" + stackName + "-" + container + "-" + index;
+}
+
+export function getLxcTerminalName(endpoint : string, name : string) {
+    return "lxc-" + endpoint + "-" + name;
+}
+
+export function getLxcExecTerminalName(endpoint : string, name : string, index : number) {
+    return "lxc-exec-" + endpoint + "-" + name + "-" + index;
 }
 
 export function copyYAMLComments(doc : Document, src : Document) {

@@ -33,6 +33,12 @@
                     </router-link>
                 </li>
 
+                <li v-if="$root.loggedIn && $root.info && $root.info.lxcAvailable" class="nav-item me-2">
+                    <router-link to="/lxc" class="nav-link">
+                        <font-awesome-icon icon="server" /> {{ $tc("lxcContainer", 2) }}
+                    </router-link>
+                </li>
+
                 <li v-if="$root.loggedIn" class="nav-item">
                     <div class="dropdown dropdown-profile-pic">
                         <div class="nav-link" data-bs-toggle="dropdown">

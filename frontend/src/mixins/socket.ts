@@ -36,6 +36,11 @@ export default defineComponent({
             // All stack list from all agents
             allAgentStackList: {} as Record<string, object>,
 
+            lxcContainerList: {},
+
+            // All LXC container list from all agents
+            allAgentLxcContainerList: {} as Record<string, object>,
+
             // online / offline / connecting
             agentStatusList: {
 
@@ -64,6 +69,22 @@ export default defineComponent({
                 let instance = this.allAgentStackList[endpoint];
                 for (let stackName in instance.stackList) {
                     list[stackName + "_" + endpoint] = instance.stackList[stackName];
+                }
+            }
+            return list;
+        },
+
+        completeLxcContainerList() {
+            let list : Record<string, object> = {};
+
+            for (let containerName in this.lxcContainerList) {
+                list[containerName + "_"] = this.lxcContainerList[containerName];
+            }
+
+            for (let endpoint in this.allAgentLxcContainerList) {
+                let instance = this.allAgentLxcContainerList[endpoint];
+                for (let containerName in instance.lxcContainerList) {
+                    list[containerName + "_" + endpoint] = instance.lxcContainerList[containerName];
                 }
             }
             return list;
@@ -255,6 +276,21 @@ export default defineComponent({
                             };
                         }
                         this.allAgentStackList[res.endpoint].stackList = res.stackList;
+                    }
+                }
+            });
+
+            agentSocket.on("lxcContainerList", (res) => {
+                if (res.ok) {
+                    if (!res.endpoint) {
+                        this.lxcContainerList = res.lxcContainerList;
+                    } else {
+                        if (!this.allAgentLxcContainerList[res.endpoint]) {
+                            this.allAgentLxcContainerList[res.endpoint] = {
+                                lxcContainerList: {},
+                            };
+                        }
+                        this.allAgentLxcContainerList[res.endpoint].lxcContainerList = res.lxcContainerList;
                     }
                 }
             });

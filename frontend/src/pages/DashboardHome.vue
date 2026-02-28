@@ -33,6 +33,31 @@
                     </div>
 
                     <button class="btn-normal btn mb-4" @click="convertDockerRun">{{ $t("Convert to Compose") }}</button>
+
+                    <!-- LXC Section -->
+                    <div v-if="$root.info && $root.info.lxcAvailable">
+                        <h2 class="mb-3">{{ $tc("lxcContainer", 2) }}</h2>
+                        <div class="shadow-box big-padding text-center mb-3">
+                            <div class="row">
+                                <div class="col">
+                                    <h3>{{ $t("active") }}</h3>
+                                    <span class="num active">{{ lxcActiveNum }}</span>
+                                </div>
+                                <div class="col">
+                                    <h3>{{ $t("frozen") }}</h3>
+                                    <span class="num frozen">{{ lxcFrozenNum }}</span>
+                                </div>
+                                <div class="col">
+                                    <h3>{{ $t("exited") }}</h3>
+                                    <span class="num exited">{{ lxcStoppedNum }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <router-link to="/lxc" class="btn btn-primary mb-4">
+                            <font-awesome-icon icon="plus" class="me-1" />
+                            {{ $t("createLxcContainer") }}
+                        </router-link>
+                    </div>
                 </div>
                 <!-- Right -->
                 <div class="col-md-5">
@@ -95,7 +120,7 @@
 </template>
 
 <script>
-import { statusNameShort } from "../../../common/util-common";
+import { statusNameShort, FROZEN } from "../../../common/util-common";
 
 export default {
     components: {
@@ -139,6 +164,15 @@ export default {
         },
         exitedNum() {
             return this.getStatusNum("exited");
+        },
+        lxcActiveNum() {
+            return this.getLxcStatusNum("active");
+        },
+        lxcFrozenNum() {
+            return this.getLxcStatusNum("frozen");
+        },
+        lxcStoppedNum() {
+            return this.getLxcStatusNum("exited");
         },
     },
 
@@ -205,6 +239,18 @@ export default {
             for (let stackName in this.$root.completeStackList) {
                 const stack = this.$root.completeStackList[stackName];
                 if (statusNameShort(stack.status) === statusName) {
+                    num += 1;
+                }
+            }
+            return num;
+        },
+
+        getLxcStatusNum(statusName) {
+            let num = 0;
+
+            for (let containerName in this.$root.completeLxcContainerList) {
+                const container = this.$root.completeLxcContainerList[containerName];
+                if (statusNameShort(container.status) === statusName) {
                     num += 1;
                 }
             }
@@ -305,6 +351,10 @@ export default {
 
     &.exited {
         color: $danger;
+    }
+
+    &.frozen {
+        color: $warning;
     }
 }
 
