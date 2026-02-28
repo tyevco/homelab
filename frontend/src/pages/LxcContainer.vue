@@ -158,7 +158,7 @@
                             :name="execTerminalName"
                             :endpoint="endpoint"
                             :rows="terminalRows"
-                            :interactive="true"
+                            mode="interactiveRaw"
                         ></Terminal>
                     </div>
                 </div>
