@@ -23,6 +23,8 @@ import { generatePasswordHash } from "./password-hash";
 import { Bean } from "redbean-node/dist/bean";
 import { Arguments, Config, DockgeSocket } from "./util-server";
 import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handler";
+import { LxcSocketHandler } from "./agent-socket-handlers/lxc-socket-handler";
+import { LxcContainer } from "./lxc-container";
 import expressStaticGzip from "express-static-gzip";
 import path from "path";
 import { TerminalSocketHandler } from "./agent-socket-handlers/terminal-socket-handler";
@@ -69,6 +71,7 @@ export class DockgeServer {
     agentSocketHandlerList : AgentSocketHandler[] = [
         new DockerSocketHandler(),
         new TerminalSocketHandler(),
+        new LxcSocketHandler(),
     ];
 
     /**
@@ -79,6 +82,8 @@ export class DockgeServer {
     jwtSecret : string = "";
 
     stacksDir : string = "";
+
+    lxcAvailable : boolean = false;
 
     /**
      *
@@ -339,6 +344,14 @@ export class DockgeServer {
             log.error("server", e);
         }
 
+        if (this.lxcAvailable) {
+            try {
+                this.sendLxcContainerList();
+            } catch (e) {
+                log.error("server", e);
+            }
+        }
+
         socket.instanceManager.sendAgentList();
 
         // Also connect to other dockge instances
@@ -387,6 +400,10 @@ export class DockgeServer {
             this.needSetup = true;
         }
 
+        // Check LXC availability
+        this.lxcAvailable = await LxcContainer.isLxcAvailable();
+        log.info("server", "LXC available: " + this.lxcAvailable);
+
         // Listen
         this.httpServer.listen(this.config.port, this.config.hostname, () => {
             if (this.config.hostname) {
@@ -401,6 +418,9 @@ export class DockgeServer {
             }, () => {
                 //log.debug("server", "Cron job running");
                 this.sendStackList(true);
+                if (this.lxcAvailable) {
+                    this.sendLxcContainerList(true);
+                }
             });
 
             checkVersion.startInterval();
@@ -439,6 +459,7 @@ export class DockgeServer {
             latestVersion: latestVersionProperty,
             isContainer,
             primaryHostname: await Settings.get("primaryHostname"),
+            lxcAvailable: this.lxcAvailable,
             //serverTimezone: await this.getTimezone(),
             //serverTimezoneOffset: this.getTimezoneOffset(),
         });
@@ -611,6 +632,38 @@ export class DockgeServer {
                 dockgeSocket.emitAgent("stackList", {
                     ok: true,
                     stackList: Object.fromEntries(map),
+                });
+            }
+        }
+    }
+
+    /**
+     * Send LXC container list to all connected sockets
+     * @param useCache
+     */
+    async sendLxcContainerList(useCache = false) {
+        let socketList = this.io.sockets.sockets.values();
+
+        let containerList;
+
+        for (let socket of socketList) {
+            let dockgeSocket = socket as DockgeSocket;
+
+            if (dockgeSocket.userID) {
+                if (!containerList) {
+                    containerList = await LxcContainer.getContainerList(this, useCache);
+                }
+
+                let map : Map<string, object> = new Map();
+
+                for (let [ containerName, container ] of containerList) {
+                    map.set(containerName, container.toSimpleJSON(dockgeSocket.endpoint));
+                }
+
+                log.debug("server", "Send LXC container list to user: " + dockgeSocket.id + " (" + dockgeSocket.endpoint + ")");
+                dockgeSocket.emitAgent("lxcContainerList", {
+                    ok: true,
+                    lxcContainerList: Object.fromEntries(map),
                 });
             }
         }

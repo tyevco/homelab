@@ -43,8 +43,14 @@
             </div>
         </div>
         <div ref="stackList" class="stack-list" :class="{ scrollbar: scrollbar }" :style="stackListStyle">
-            <div v-if="Object.keys(sortedStackList).length === 0" class="text-center mt-3">
+            <div v-if="Object.keys(sortedStackList).length === 0 && Object.keys(sortedLxcContainerList).length === 0" class="text-center mt-3">
                 <router-link to="/compose">{{ $t("addFirstStackMsg") }}</router-link>
+            </div>
+
+            <!-- Docker Stacks Section -->
+            <div v-if="showLxcSection && Object.keys(sortedStackList).length > 0" class="section-header">
+                <font-awesome-icon icon="cube" class="me-1" />
+                {{ $t("compose") }}
             </div>
 
             <StackListItem
@@ -55,6 +61,22 @@
                 :isSelected="isSelected"
                 :select="select"
                 :deselect="deselect"
+            />
+
+            <!-- LXC Containers Section -->
+            <div v-if="showLxcSection" class="section-header mt-2">
+                <font-awesome-icon icon="server" class="me-1" />
+                {{ $tc("lxcContainer", 2) }}
+            </div>
+
+            <div v-if="showLxcSection && Object.keys(sortedLxcContainerList).length === 0" class="text-center mt-2 mb-2">
+                <router-link to="/lxc">{{ $t("addFirstLxcMsg") }}</router-link>
+            </div>
+
+            <LxcListItem
+                v-for="(item, index) in sortedLxcContainerList"
+                :key="'lxc-' + index"
+                :container="item"
             />
         </div>
     </div>
@@ -67,12 +89,14 @@
 <script>
 import Confirm from "../components/Confirm.vue";
 import StackListItem from "../components/StackListItem.vue";
-import { CREATED_FILE, CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../../../common/util-common";
+import LxcListItem from "../components/LxcListItem.vue";
+import { CREATED_FILE, CREATED_STACK, EXITED, FROZEN, RUNNING, UNKNOWN } from "../../../common/util-common";
 
 export default {
     components: {
         Confirm,
         StackListItem,
+        LxcListItem,
     },
     props: {
         /** Should the scrollbar be shown */
@@ -181,6 +205,44 @@ export default {
                     } else if (m2.status === UNKNOWN) {
                         return 1;
                     } else if (m1.status === UNKNOWN) {
+                        return -1;
+                    }
+                }
+                return m1.name.localeCompare(m2.name);
+            });
+
+            return result;
+        },
+
+        showLxcSection() {
+            return this.$root.info && this.$root.info.lxcAvailable;
+        },
+
+        sortedLxcContainerList() {
+            let result = Object.values(this.$root.completeLxcContainerList || {});
+
+            result = result.filter(container => {
+                let searchTextMatch = true;
+                if (this.searchText !== "") {
+                    const loweredSearchText = this.searchText.toLowerCase();
+                    searchTextMatch = container.name.toLowerCase().includes(loweredSearchText);
+                }
+                return searchTextMatch;
+            });
+
+            result.sort((m1, m2) => {
+                if (m1.status !== m2.status) {
+                    if (m2.status === RUNNING) {
+                        return 1;
+                    } else if (m1.status === RUNNING) {
+                        return -1;
+                    } else if (m2.status === FROZEN) {
+                        return 1;
+                    } else if (m1.status === FROZEN) {
+                        return -1;
+                    } else if (m2.status === EXITED) {
+                        return 1;
+                    } else if (m1.status === EXITED) {
                         return -1;
                     }
                 }
@@ -442,6 +504,15 @@ export default {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.section-header {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #888;
+    padding: 8px 8px 4px;
+    letter-spacing: 0.5px;
 }
 
 </style>

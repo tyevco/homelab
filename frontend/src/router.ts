@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard.vue";
 import DashboardHome from "./pages/DashboardHome.vue";
 import Console from "./pages/Console.vue";
 import Compose from "./pages/Compose.vue";
+import LxcContainer from "./pages/LxcContainer.vue";
 import ContainerTerminal from "./pages/ContainerTerminal.vue";
 
 const Settings = () => import("./pages/Settings.vue");
@@ -42,6 +43,18 @@ const routes = [
                             {
                                 path: "/compose/:stackName",
                                 component: Compose,
+                            },
+                            {
+                                path: "/lxc",
+                                component: LxcContainer,
+                            },
+                            {
+                                path: "/lxc/:containerName",
+                                component: LxcContainer,
+                            },
+                            {
+                                path: "/lxc/:containerName/:endpoint",
+                                component: LxcContainer,
                             },
                             {
                                 path: "/terminal/:stackName/:serviceName/:type",

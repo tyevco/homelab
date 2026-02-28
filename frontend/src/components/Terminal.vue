@@ -91,7 +91,7 @@ export default {
 
         if (this.mode === "mainTerminal") {
             this.mainTerminalConfig();
-        } else if (this.mode === "interactive") {
+        } else if (this.mode === "interactive" || this.mode === "interactiveRaw") {
             this.interactiveTerminalConfig();
         }
 
@@ -135,6 +135,8 @@ export default {
                 }
             });
         }
+        // interactiveRaw: keyboard input is configured but no auto-setup event is emitted.
+        // The caller is responsible for creating the backend terminal (e.g. via lxcExecTerminal).
         // Fit the terminal width to the div container size after terminal is created.
         this.updateTerminalSize();
     },
@@ -325,7 +327,7 @@ export default {
                 const backspaces = "\b".repeat(afterCursor.length);
                 this.terminal.write(backspaces);
                 
-            } else if (this.mode === "interactive") {
+            } else if (this.mode === "interactive" || this.mode === "interactiveRaw") {
                 // For interactive terminal, send directly to server
                 this.$root.emitAgent(this.endpoint, "terminalInput", this.name, text, (res) => {
                     if (!res.ok) {
@@ -343,7 +345,7 @@ export default {
             event.preventDefault();
             
             // Only handle paste for modes that support input
-            if (this.mode === "mainTerminal" || this.mode === "interactive") {
+            if (this.mode === "mainTerminal" || this.mode === "interactive" || this.mode === "interactiveRaw") {
                 this.handlePaste();
             }
         },
