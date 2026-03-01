@@ -109,7 +109,7 @@ describe("LxcApiRouter validation", () => {
 
     describe("create endpoint required field validation", () => {
         // Simulates the validation logic from the POST /api/lxc/ handler
-        function validateCreateFields(body: Record<string, unknown>): { ok: boolean; msg?: string } {
+        function validateCreateFields(body: Record<string, string>): { ok: boolean; msg?: string } {
             const { name, dist, release, arch } = body;
 
             if (!name || !dist || !release || !arch) {
