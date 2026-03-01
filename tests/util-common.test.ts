@@ -168,6 +168,10 @@ describe("util-common", () => {
         it("should return min when min equals max", () => {
             expect(getCryptoRandomInt(5, 5)).toBe(5);
         });
+
+        it("should throw when range exceeds 2^32", () => {
+            expect(() => getCryptoRandomInt(0, Math.pow(2, 32) + 1)).toThrow("Range is too large");
+        });
     });
 
     describe("parseDockerPort", () => {

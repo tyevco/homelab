@@ -156,7 +156,7 @@ export class LxcApiRouter extends Router {
                     { encoding: "utf-8" }
                 );
 
-                server.sendLxcContainerList();
+                await server.sendLxcContainerList();
                 res.status(201).json({ ok: true,
                     msg: "Container created" });
             } catch (e) {
@@ -219,7 +219,7 @@ export class LxcApiRouter extends Router {
                 }
 
                 await childProcessAsync.spawn("lxc-start", [ "-n", name ], { encoding: "utf-8" });
-                server.sendLxcContainerList();
+                await server.sendLxcContainerList();
                 res.json({ ok: true,
                     msg: "Container started" });
             } catch (e) {
@@ -249,7 +249,7 @@ export class LxcApiRouter extends Router {
                 }
 
                 await childProcessAsync.spawn("lxc-stop", [ "-n", name ], { encoding: "utf-8" });
-                server.sendLxcContainerList();
+                await server.sendLxcContainerList();
                 res.json({ ok: true,
                     msg: "Container stopped" });
             } catch (e) {
@@ -286,7 +286,7 @@ export class LxcApiRouter extends Router {
                 }
 
                 await childProcessAsync.spawn("lxc-destroy", [ "-n", name ], { encoding: "utf-8" });
-                server.sendLxcContainerList();
+                await server.sendLxcContainerList();
                 res.json({ ok: true,
                     msg: "Container deleted" });
             } catch (e) {

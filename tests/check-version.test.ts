@@ -146,6 +146,36 @@ describe("check-version", () => {
             await checkVersion.startInterval();
             expect(checkVersion.interval).toBeDefined();
         });
+
+        it("should clear previous interval when called multiple times", async () => {
+            vi.mocked(Settings.get).mockResolvedValue(false);
+            await checkVersion.startInterval();
+            const firstInterval = checkVersion.interval;
+            expect(firstInterval).toBeDefined();
+
+            await checkVersion.startInterval();
+            const secondInterval = checkVersion.interval;
+            expect(secondInterval).toBeDefined();
+            expect(secondInterval).not.toBe(firstInterval);
+        });
+
+        it("should skip beta when checkBeta enabled but no beta field in response", async () => {
+            vi.mocked(Settings.get).mockImplementation(async (key: string) => {
+                if (key === "checkUpdate") {
+                    return true;
+                }
+                if (key === "checkBeta") {
+                    return true;
+                }
+                return null;
+            });
+            mockFetch.mockResolvedValue({
+                json: () => Promise.resolve({ slow: "2.0.0" }),
+            });
+
+            await checkVersion.startInterval();
+            expect(checkVersion.latestVersion).toBe("2.0.0");
+        });
     });
 
     describe("compare-versions integration", () => {

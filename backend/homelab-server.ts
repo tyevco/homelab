@@ -312,8 +312,13 @@ export class HomelabServer {
             log.debug("auth", "check auto login");
             if (await Settings.get("disableAuth")) {
                 log.info("auth", "Disabled Auth: auto login to admin");
-                await this.afterLogin(homelabSocket, await R.findOne("user") as User);
-                homelabSocket.emit("autoLogin");
+                const user = await R.findOne("user") as User | null;
+                if (user) {
+                    await this.afterLogin(homelabSocket, user);
+                    homelabSocket.emit("autoLogin");
+                } else {
+                    log.warn("auth", "Auto login failed: no user found in database");
+                }
             } else {
                 log.debug("auth", "need auth");
             }
@@ -395,7 +400,8 @@ export class HomelabServer {
 
         this.jwtSecret = jwtSecretBean.value;
 
-        const userCount = (await R.knex("user").count("id as count").first()).count;
+        const userCountResult = await R.knex("user").count("id as count").first();
+        const userCount = userCountResult?.count ?? 0;
 
         log.debug("server", "User count: " + userCount);
 
@@ -420,11 +426,14 @@ export class HomelabServer {
             // Run every 10 seconds
             Cron("*/10 * * * * *", {
                 protect: true,  // Enabled over-run protection.
-            }, () => {
-                //log.debug("server", "Cron job running");
-                this.sendStackList(true);
-                if (this.lxcAvailable) {
-                    this.sendLxcContainerList(true);
+            }, async () => {
+                try {
+                    await this.sendStackList(true);
+                    if (this.lxcAvailable) {
+                        await this.sendLxcContainerList(true);
+                    }
+                } catch (e) {
+                    log.error("server", e);
                 }
             });
 

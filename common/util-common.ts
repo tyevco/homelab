@@ -175,7 +175,7 @@ export function getCryptoRandomInt(min: number, max: number):number {
 
     const range = max - min;
     if (range >= Math.pow(2, 32)) {
-        console.log("Warning! Range is too large.");
+        throw new Error("Range is too large for getCryptoRandomInt");
     }
 
     let tmpRange = range;
