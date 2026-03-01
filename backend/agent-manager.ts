@@ -6,6 +6,7 @@ import { isDev, LooseObject, sleep } from "../common/util-common";
 import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
+import { encryptPassword, decryptPassword } from "./password-hash";
 
 /**
  * Homelab Instance Manager
@@ -14,12 +15,14 @@ import dayjs, { Dayjs } from "dayjs";
 export class AgentManager {
 
     protected socket : HomelabSocket;
+    protected encryptionKey : string;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
     protected _firstConnectTime : Dayjs = dayjs();
 
-    constructor(socket: HomelabSocket) {
+    constructor(socket: HomelabSocket, encryptionKey : string = "") {
         this.socket = socket;
+        this.encryptionKey = encryptionKey;
     }
 
     get firstConnectTime() : Dayjs {
@@ -83,7 +86,7 @@ export class AgentManager {
         let bean = R.dispense("agent") as Agent;
         bean.url = url;
         bean.username = username;
-        bean.password = password;
+        bean.password = this.encryptionKey ? encryptPassword(password, this.encryptionKey) : password;
         await R.store(bean);
         return bean;
     }
@@ -217,7 +220,15 @@ export class AgentManager {
 
         for (let endpoint in list) {
             let agent = list[endpoint];
-            this.connect(agent.url, agent.username, agent.password);
+            let password = agent.password;
+            if (this.encryptionKey) {
+                try {
+                    password = decryptPassword(password, this.encryptionKey);
+                } catch (e) {
+                    log.warn("agent-manager", `Failed to decrypt password for ${endpoint}, trying as plaintext`);
+                }
+            }
+            this.connect(agent.url, agent.username, password);
         }
     }
 

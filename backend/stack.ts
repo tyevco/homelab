@@ -121,8 +121,22 @@ export class Stack {
             throw new ValidationError("Stack name can only contain [a-z][0-9] _ - only");
         }
 
-        // Check YAML format
-        yaml.parse(this.composeYAML);
+        // Check YAML format and compose structure
+        let parsed = yaml.parse(this.composeYAML);
+
+        if (typeof parsed !== "object" || parsed === null || !parsed.services) {
+            throw new ValidationError("Compose file must contain a 'services' key");
+        }
+
+        if (typeof parsed.services !== "object" || parsed.services === null) {
+            throw new ValidationError("'services' must be an object");
+        }
+
+        for (const [ serviceName, serviceDef ] of Object.entries(parsed.services)) {
+            if (typeof serviceDef !== "object" || serviceDef === null) {
+                throw new ValidationError(`Service '${serviceName}' must be an object`);
+            }
+        }
 
         let lines = this.composeENV.split("\n");
 

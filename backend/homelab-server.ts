@@ -35,6 +35,8 @@ import gracefulShutdown from "http-graceful-shutdown";
 import User from "./models/user";
 import childProcessAsync from "promisify-child-process";
 import { AgentManager } from "./agent-manager";
+import { Agent } from "./models/agent";
+import { encryptPassword, decryptPassword } from "./password-hash";
 import { AgentProxySocketHandler } from "./socket-handlers/agent-proxy-socket-handler";
 import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
@@ -260,7 +262,7 @@ export class HomelabServer {
 
         this.io.on("connection", async (socket: Socket) => {
             let homelabSocket = socket as HomelabSocket;
-            homelabSocket.instanceManager = new AgentManager(homelabSocket);
+            homelabSocket.instanceManager = new AgentManager(homelabSocket, this.jwtSecret);
             homelabSocket.emitAgent = (event : string, ...args : unknown[]) => {
                 let obj = args[0];
                 if (typeof(obj) === "object") {
@@ -327,6 +329,7 @@ export class HomelabServer {
             homelabSocket.on("disconnect", () => {
                 log.info("server", "Socket disconnected!");
                 homelabSocket.instanceManager.disconnectAll();
+                Terminal.cleanupSocket(homelabSocket);
             });
 
         });
@@ -399,6 +402,9 @@ export class HomelabServer {
         }
 
         this.jwtSecret = jwtSecretBean.value;
+
+        // Migrate plaintext agent passwords to encrypted
+        await this.migrateAgentPasswords();
 
         const userCountResult = await R.knex("user").count("id as count").first();
         const userCount = userCountResult?.count ?? 0;
@@ -706,6 +712,32 @@ export class HomelabServer {
 
     get stackDirFullPath() {
         return path.resolve(this.stacksDir);
+    }
+
+    /**
+     * Migrate plaintext agent passwords to encrypted format.
+     * Passwords in "iv:authTag:ciphertext" hex format are already encrypted.
+     */
+    async migrateAgentPasswords() {
+        try {
+            const agents = await R.findAll("agent") as Agent[];
+            for (const agent of agents) {
+                // Skip if already encrypted (format: hex:hex:hex)
+                if (/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/.test(agent.password)) {
+                    try {
+                        decryptPassword(agent.password, this.jwtSecret);
+                        continue;
+                    } catch {
+                        // Not valid encrypted, re-encrypt below
+                    }
+                }
+                agent.password = encryptPassword(agent.password, this.jwtSecret);
+                await R.store(agent);
+                log.info("server", `Migrated agent password for ${agent.url} to encrypted format`);
+            }
+        } catch (e) {
+            log.warn("server", "Agent password migration skipped (no agent table yet)");
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { loginRateLimiter, apiRateLimiter, twoFaRateLimiter } from "../backend/rate-limiter";
+import { loginRateLimiter, apiRateLimiter, twoFaRateLimiter, rateLimitMiddleware } from "../backend/rate-limiter";
+import type { Request, Response, NextFunction } from "express";
 
 describe("rate-limiter", () => {
 
@@ -55,6 +56,47 @@ describe("rate-limiter", () => {
         it("should return remaining token count", async () => {
             const remaining = await twoFaRateLimiter.removeTokens(0);
             expect(typeof remaining).toBe("number");
+        });
+    });
+
+    describe("rateLimitMiddleware", () => {
+        it("should call next() when tokens are available", async () => {
+            const middleware = rateLimitMiddleware(twoFaRateLimiter);
+            const req = {} as Request;
+            const res = {
+                status: vi.fn().mockReturnThis(),
+                json: vi.fn(),
+            } as unknown as Response;
+            const next = vi.fn() as NextFunction;
+
+            // Use 0-token remove to avoid depleting tokens
+            await middleware(req, res, next);
+            expect(next).toHaveBeenCalled();
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        it("should return 429 when rate limited", async () => {
+            const middleware = rateLimitMiddleware(apiRateLimiter);
+
+            // Exhaust remaining tokens
+            for (let i = 0; i < 65; i++) {
+                await apiRateLimiter.removeTokens(1);
+            }
+
+            const req = {} as Request;
+            const res = {
+                status: vi.fn().mockReturnThis(),
+                json: vi.fn(),
+            } as unknown as Response;
+            const next = vi.fn() as NextFunction;
+
+            await middleware(req, res, next);
+            expect(next).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(429);
+            expect(res.json).toHaveBeenCalledWith({
+                ok: false,
+                msg: "Too frequently, try again later.",
+            });
         });
     });
 });

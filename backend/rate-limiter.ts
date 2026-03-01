@@ -1,6 +1,7 @@
 // "limit" is bugged in Typescript, use "limiter-es6-compat" instead
 // See https://github.com/jhurliman/node-rate-limiter/issues/80
 import { RateLimiter, RateLimiterOpts } from "limiter-es6-compat";
+import { Request, Response, NextFunction } from "express";
 import { log } from "./log";
 
 export interface KumaRateLimiterOpts extends RateLimiterOpts {
@@ -79,3 +80,19 @@ export const twoFaRateLimiter = new KumaRateLimiter({
     fireImmediately: true,
     errorMessage: "Too frequently, try again later."
 });
+
+/**
+ * Express middleware wrapper for KumaRateLimiter
+ * Returns 429 Too Many Requests when the rate limit is exceeded
+ */
+export function rateLimitMiddleware(limiter : KumaRateLimiter) {
+    return async (_req : Request, res : Response, next : NextFunction) => {
+        const remaining = await limiter.removeTokens(1);
+        if (remaining < 0) {
+            res.status(429).json({ ok: false,
+                msg: limiter.errorMessage });
+            return;
+        }
+        next();
+    };
+}

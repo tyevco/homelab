@@ -182,6 +182,31 @@ describe("Terminal", () => {
         });
     });
 
+    describe("cleanupSocket", () => {
+        it("should remove socket from all terminals", () => {
+            const term1 = new Terminal(mockServer, "cleanup-1", "bash", [], "/tmp");
+            const term2 = new Terminal(mockServer, "cleanup-2", "bash", [], "/tmp");
+            term1.join(mockSocket);
+            term2.join(mockSocket);
+            term1.join(mockSocket2);
+
+            Terminal.cleanupSocket(mockSocket);
+
+            // mockSocket should be removed from both terminals
+            // mockSocket2 should still be in term1
+            // We verify by checking the socketList via the private field
+            const term1Sockets = (term1 as unknown as Record<string, Record<string, unknown>>)["socketList"];
+            const term2Sockets = (term2 as unknown as Record<string, Record<string, unknown>>)["socketList"];
+            expect(term1Sockets["socket-1"]).toBeUndefined();
+            expect(term2Sockets["socket-1"]).toBeUndefined();
+            expect(term1Sockets["socket-2"]).toBeDefined();
+        });
+
+        it("should handle empty terminal map", () => {
+            expect(() => Terminal.cleanupSocket(mockSocket)).not.toThrow();
+        });
+    });
+
     describe("start idempotency", () => {
         it("should return early if ptyProcess is already set", () => {
             const terminal = new Terminal(mockServer, "double-start", "bash", [], "/tmp");
