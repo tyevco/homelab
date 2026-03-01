@@ -162,7 +162,7 @@ export class LxcContainer {
         const containerList = new Map<string, LxcContainer>();
 
         try {
-            const res = await childProcessAsync.spawn("lxc-ls", ["-f", "-F", "name,state,ipv4,autostart,pid,memory"], {
+            const res = await childProcessAsync.spawn("lxc-ls", [ "-f", "-F", "name,state,ipv4,autostart,pid,memory" ], {
                 encoding: "utf-8",
             });
 
@@ -205,7 +205,7 @@ export class LxcContainer {
         const statusList = new Map<string, number>();
 
         try {
-            const res = await childProcessAsync.spawn("lxc-ls", ["-f", "-F", "name,state"], {
+            const res = await childProcessAsync.spawn("lxc-ls", [ "-f", "-F", "name,state" ], {
                 encoding: "utf-8",
             });
 
@@ -242,7 +242,7 @@ export class LxcContainer {
         const container = new LxcContainer(server, name);
 
         try {
-            const res = await childProcessAsync.spawn("lxc-info", ["-n", name], {
+            const res = await childProcessAsync.spawn("lxc-info", [ "-n", name ], {
                 encoding: "utf-8",
             });
 
@@ -287,7 +287,7 @@ export class LxcContainer {
         const distributions: object[] = [];
 
         try {
-            const res = await childProcessAsync.spawn("lxc-create", ["-t", "download", "--", "--list"], {
+            const res = await childProcessAsync.spawn("lxc-create", [ "-t", "download", "--", "--list" ], {
                 encoding: "utf-8",
                 timeout: 30000,
             });
@@ -340,7 +340,7 @@ export class LxcContainer {
         const terminalName = getLxcTerminalName(socket.endpoint, name);
         const exitCode = await Terminal.exec(
             server, socket, terminalName, "lxc-create",
-            ["-n", name, "-t", "download", "--", "--dist", dist, "--release", release, "--arch", arch],
+            [ "-n", name, "-t", "download", "--", "--dist", dist, "--release", release, "--arch", arch ],
             LXC_PATH
         );
 
@@ -353,7 +353,7 @@ export class LxcContainer {
 
     async start(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-start", ["-n", this.name], LXC_PATH);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-start", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to start LXC container, please check the terminal output for more information.");
         }
@@ -362,7 +362,7 @@ export class LxcContainer {
 
     async stop(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-stop", ["-n", this.name], LXC_PATH);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-stop", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to stop LXC container, please check the terminal output for more information.");
         }
@@ -371,11 +371,11 @@ export class LxcContainer {
 
     async restart(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        let exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-stop", ["-n", this.name], LXC_PATH);
+        let exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-stop", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to stop LXC container for restart, please check the terminal output for more information.");
         }
-        exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-start", ["-n", this.name], LXC_PATH);
+        exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-start", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to start LXC container for restart, please check the terminal output for more information.");
         }
@@ -384,7 +384,7 @@ export class LxcContainer {
 
     async freeze(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-freeze", ["-n", this.name], LXC_PATH);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-freeze", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to freeze LXC container, please check the terminal output for more information.");
         }
@@ -393,7 +393,7 @@ export class LxcContainer {
 
     async unfreeze(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-unfreeze", ["-n", this.name], LXC_PATH);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-unfreeze", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to unfreeze LXC container, please check the terminal output for more information.");
         }
@@ -404,11 +404,11 @@ export class LxcContainer {
         // Stop first if running
         if (this._status === RUNNING || this._status === FROZEN) {
             const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-            await Terminal.exec(this.server, socket, terminalName, "lxc-stop", ["-n", this.name], LXC_PATH);
+            await Terminal.exec(this.server, socket, terminalName, "lxc-stop", [ "-n", this.name ], LXC_PATH);
         }
 
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-destroy", ["-n", this.name], LXC_PATH);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-destroy", [ "-n", this.name ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to destroy LXC container, please check the terminal output for more information.");
         }
@@ -431,7 +431,7 @@ export class LxcContainer {
         let terminal = Terminal.getTerminal(terminalName);
 
         if (!terminal) {
-            terminal = new InteractiveTerminal(this.server, terminalName, "lxc-attach", ["-n", this.name, "--", shell], LXC_PATH);
+            terminal = new InteractiveTerminal(this.server, terminalName, "lxc-attach", [ "-n", this.name, "--", shell ], LXC_PATH);
             terminal.rows = TERMINAL_ROWS;
             log.debug("joinLxcExecTerminal", "Terminal created");
         }

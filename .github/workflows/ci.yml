@@ -18,10 +18,12 @@ jobs:
         node: [22] # Can be changed
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout Code
-        run: |  # Mainly for Windows
+      - name: Configure git line endings
+        run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
+
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js

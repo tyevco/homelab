@@ -241,7 +241,8 @@ export default {
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
-        return { extensions, editorFocus };
+        return { extensions,
+            editorFocus };
     },
     data() {
         return {
@@ -323,7 +324,7 @@ export default {
 
         uniqueDists() {
             const dists = new Set(this.distributions.map(d => d.dist));
-            return [...dists].sort();
+            return [ ...dists ].sort();
         },
 
         availableReleases() {
@@ -332,7 +333,7 @@ export default {
                     .filter(d => d.dist === this.selectedDist)
                     .map(d => d.release)
             );
-            return [...releases].sort();
+            return [ ...releases ].sort();
         },
 
         availableArchitectures() {
@@ -341,7 +342,7 @@ export default {
                     .filter(d => d.dist === this.selectedDist && d.release === this.selectedRelease)
                     .map(d => d.arch)
             );
-            return [...archs].sort();
+            return [ ...archs ].sort();
         },
     },
     mounted() {
