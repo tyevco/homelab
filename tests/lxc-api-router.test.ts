@@ -1,0 +1,262 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import express, { Express } from "express";
+import { RUNNING, FROZEN, EXITED, UNKNOWN } from "../common/util-common";
+
+// The CONTAINER_NAME_REGEX used in lxc-api-router.ts
+const CONTAINER_NAME_REGEX = /^[a-z0-9_.-]+$/;
+
+// Validation regexes from the create endpoint
+const DIST_REGEX = /^[a-zA-Z0-9_.-]+$/;
+const RELEASE_REGEX = /^[a-zA-Z0-9_.-]+$/;
+const ARCH_REGEX = /^[a-zA-Z0-9_]+$/;
+
+describe("LxcApiRouter validation", () => {
+
+    describe("CONTAINER_NAME_REGEX", () => {
+        it("should accept valid container names", () => {
+            const valid = ["mycontainer", "web-server", "db.01", "test_box", "a1.b2-c3", "123"];
+            for (const name of valid) {
+                expect(CONTAINER_NAME_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
+            }
+        });
+
+        it("should reject empty string", () => {
+            expect(CONTAINER_NAME_REGEX.test("")).toBe(false);
+        });
+
+        it("should reject uppercase letters", () => {
+            expect(CONTAINER_NAME_REGEX.test("MyContainer")).toBe(false);
+            expect(CONTAINER_NAME_REGEX.test("ABC")).toBe(false);
+        });
+
+        it("should reject names with spaces", () => {
+            expect(CONTAINER_NAME_REGEX.test("my container")).toBe(false);
+        });
+
+        it("should reject command injection attempts", () => {
+            const malicious = [
+                "test;rm -rf /",
+                "test$(whoami)",
+                "test`id`",
+                "test|cat /etc/passwd",
+                "test&&echo pwned",
+                "../../../etc/passwd",
+                "test\ninjected",
+            ];
+            for (const name of malicious) {
+                expect(CONTAINER_NAME_REGEX.test(name), `expected "${name}" to be rejected`).toBe(false);
+            }
+        });
+
+        it("should reject names with slashes", () => {
+            expect(CONTAINER_NAME_REGEX.test("path/traversal")).toBe(false);
+            expect(CONTAINER_NAME_REGEX.test("path\\traversal")).toBe(false);
+        });
+    });
+
+    describe("distribution name validation", () => {
+        it("should accept valid distribution names", () => {
+            const valid = ["ubuntu", "debian", "centos", "alpine", "archlinux", "Ubuntu-22.04"];
+            for (const name of valid) {
+                expect(DIST_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
+            }
+        });
+
+        it("should allow mixed case", () => {
+            expect(DIST_REGEX.test("Ubuntu")).toBe(true);
+            expect(DIST_REGEX.test("CentOS")).toBe(true);
+        });
+
+        it("should reject injection attempts", () => {
+            expect(DIST_REGEX.test("ubuntu;rm")).toBe(false);
+            expect(DIST_REGEX.test("dist name")).toBe(false);
+            expect(DIST_REGEX.test("$(cmd)")).toBe(false);
+        });
+    });
+
+    describe("release name validation", () => {
+        it("should accept valid release names", () => {
+            const valid = ["jammy", "22.04", "bullseye", "3.18", "focal-fossa"];
+            for (const name of valid) {
+                expect(RELEASE_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
+            }
+        });
+
+        it("should reject injection attempts", () => {
+            expect(RELEASE_REGEX.test("jammy;id")).toBe(false);
+            expect(RELEASE_REGEX.test("22 04")).toBe(false);
+        });
+    });
+
+    describe("architecture validation", () => {
+        it("should accept valid architectures", () => {
+            const valid = ["amd64", "arm64", "i386", "armhf", "x86_64"];
+            for (const name of valid) {
+                expect(ARCH_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
+            }
+        });
+
+        it("should reject dots and hyphens (stricter than dist/release)", () => {
+            expect(ARCH_REGEX.test("arm-v7")).toBe(false);
+            expect(ARCH_REGEX.test("x86.64")).toBe(false);
+        });
+
+        it("should reject injection attempts", () => {
+            expect(ARCH_REGEX.test("amd64;rm")).toBe(false);
+            expect(ARCH_REGEX.test("$(arch)")).toBe(false);
+        });
+    });
+
+    describe("create endpoint required field validation", () => {
+        // Simulates the validation logic from the POST /api/lxc/ handler
+        function validateCreateFields(body: Record<string, any>): { ok: boolean; msg?: string } {
+            const { name, dist, release, arch } = body;
+
+            if (!name || !dist || !release || !arch) {
+                return { ok: false, msg: "Missing required fields: name, dist, release, arch" };
+            }
+
+            if (!CONTAINER_NAME_REGEX.test(name)) {
+                return { ok: false, msg: "Container name can only contain [a-z][0-9] _ . - characters" };
+            }
+            if (!DIST_REGEX.test(dist)) {
+                return { ok: false, msg: "Invalid distribution name" };
+            }
+            if (!RELEASE_REGEX.test(release)) {
+                return { ok: false, msg: "Invalid release name" };
+            }
+            if (!ARCH_REGEX.test(arch)) {
+                return { ok: false, msg: "Invalid architecture" };
+            }
+
+            return { ok: true };
+        }
+
+        it("should accept valid create payload", () => {
+            const result = validateCreateFields({
+                name: "my-container",
+                dist: "ubuntu",
+                release: "22.04",
+                arch: "amd64",
+            });
+            expect(result.ok).toBe(true);
+        });
+
+        it("should reject missing name", () => {
+            const result = validateCreateFields({ dist: "ubuntu", release: "22.04", arch: "amd64" });
+            expect(result.ok).toBe(false);
+            expect(result.msg).toContain("Missing required fields");
+        });
+
+        it("should reject missing dist", () => {
+            const result = validateCreateFields({ name: "test", release: "22.04", arch: "amd64" });
+            expect(result.ok).toBe(false);
+        });
+
+        it("should reject missing release", () => {
+            const result = validateCreateFields({ name: "test", dist: "ubuntu", arch: "amd64" });
+            expect(result.ok).toBe(false);
+        });
+
+        it("should reject missing arch", () => {
+            const result = validateCreateFields({ name: "test", dist: "ubuntu", release: "22.04" });
+            expect(result.ok).toBe(false);
+        });
+
+        it("should reject empty strings as missing", () => {
+            const result = validateCreateFields({ name: "", dist: "ubuntu", release: "22.04", arch: "amd64" });
+            expect(result.ok).toBe(false);
+        });
+
+        it("should reject invalid container name even when all fields present", () => {
+            const result = validateCreateFields({
+                name: "UPPERCASE",
+                dist: "ubuntu",
+                release: "22.04",
+                arch: "amd64",
+            });
+            expect(result.ok).toBe(false);
+            expect(result.msg).toContain("Container name");
+        });
+
+        it("should reject invalid distribution name", () => {
+            const result = validateCreateFields({
+                name: "test",
+                dist: "ubuntu;hack",
+                release: "22.04",
+                arch: "amd64",
+            });
+            expect(result.ok).toBe(false);
+            expect(result.msg).toContain("distribution");
+        });
+
+        it("should reject invalid architecture", () => {
+            const result = validateCreateFields({
+                name: "test",
+                dist: "ubuntu",
+                release: "22.04",
+                arch: "amd64;rm -rf",
+            });
+            expect(result.ok).toBe(false);
+            expect(result.msg).toContain("architecture");
+        });
+    });
+
+    describe("config save validation", () => {
+        // Simulates validation from PUT /api/lxc/:name/config
+        function validateConfigSave(name: string, config: any): { ok: boolean; msg?: string } {
+            if (!CONTAINER_NAME_REGEX.test(name)) {
+                return { ok: false, msg: "Invalid container name" };
+            }
+            if (typeof config !== "string") {
+                return { ok: false, msg: "Missing required field: config" };
+            }
+            return { ok: true };
+        }
+
+        it("should accept valid name and config string", () => {
+            expect(validateConfigSave("mycontainer", "lxc.net.0.type = veth").ok).toBe(true);
+        });
+
+        it("should accept empty config string", () => {
+            expect(validateConfigSave("mycontainer", "").ok).toBe(true);
+        });
+
+        it("should reject non-string config", () => {
+            expect(validateConfigSave("mycontainer", undefined).ok).toBe(false);
+            expect(validateConfigSave("mycontainer", null).ok).toBe(false);
+            expect(validateConfigSave("mycontainer", 123).ok).toBe(false);
+        });
+
+        it("should reject invalid container name", () => {
+            expect(validateConfigSave("INVALID", "config").ok).toBe(false);
+        });
+    });
+
+    describe("delete endpoint status checks", () => {
+        // Test the logic that checks whether to stop before destroy
+        function shouldStopBeforeDestroy(currentStatus: number | undefined): boolean {
+            return currentStatus === RUNNING || currentStatus === FROZEN;
+        }
+
+        it("should stop running containers before destroying", () => {
+            expect(shouldStopBeforeDestroy(RUNNING)).toBe(true);
+        });
+
+        it("should stop frozen containers before destroying", () => {
+            expect(shouldStopBeforeDestroy(FROZEN)).toBe(true);
+        });
+
+        it("should not stop already-stopped containers", () => {
+            expect(shouldStopBeforeDestroy(EXITED)).toBe(false);
+        });
+
+        it("should not stop containers with unknown status", () => {
+            expect(shouldStopBeforeDestroy(UNKNOWN)).toBe(false);
+        });
+
+        it("should handle undefined status", () => {
+            expect(shouldStopBeforeDestroy(undefined)).toBe(false);
+        });
+    });
+});
