@@ -5,6 +5,8 @@ import {
     needRehashPassword,
     shake256,
     SHAKE256_LENGTH,
+    encryptPassword,
+    decryptPassword,
 } from "../backend/password-hash";
 
 describe("password-hash", () => {
@@ -114,6 +116,65 @@ describe("password-hash", () => {
     describe("SHAKE256_LENGTH constant", () => {
         it("should be 16", () => {
             expect(SHAKE256_LENGTH).toBe(16);
+        });
+    });
+
+    describe("encryptPassword + decryptPassword", () => {
+        it("should round-trip encrypt and decrypt", () => {
+            const key = "my-secret-jwt-key";
+            const password = "agent-password-123";
+            const encrypted = encryptPassword(password, key);
+            const decrypted = decryptPassword(encrypted, key);
+            expect(decrypted).toBe(password);
+        });
+
+        it("should produce different ciphertexts for same input (random IV)", () => {
+            const key = "test-key";
+            const password = "same-password";
+            const enc1 = encryptPassword(password, key);
+            const enc2 = encryptPassword(password, key);
+            expect(enc1).not.toBe(enc2);
+            // Both should decrypt to the same value
+            expect(decryptPassword(enc1, key)).toBe(password);
+            expect(decryptPassword(enc2, key)).toBe(password);
+        });
+
+        it("should throw with wrong key", () => {
+            const encrypted = encryptPassword("secret", "correct-key");
+            expect(() => decryptPassword(encrypted, "wrong-key")).toThrow();
+        });
+
+        it("should throw with invalid format (missing parts)", () => {
+            expect(() => decryptPassword("not-valid-format", "key")).toThrow("Invalid encrypted password format");
+        });
+
+        it("should throw with invalid format (too many parts)", () => {
+            expect(() => decryptPassword("a:b:c:d", "key")).toThrow("Invalid encrypted password format");
+        });
+
+        it("should handle empty password", () => {
+            const key = "test-key";
+            const encrypted = encryptPassword("", key);
+            const decrypted = decryptPassword(encrypted, key);
+            expect(decrypted).toBe("");
+        });
+
+        it("should handle unicode passwords", () => {
+            const key = "test-key";
+            const password = "p\u00e4ssw\u00f6rd\ud83d\udd12";
+            const encrypted = encryptPassword(password, key);
+            const decrypted = decryptPassword(encrypted, key);
+            expect(decrypted).toBe(password);
+        });
+
+        it("should produce format iv:authTag:ciphertext in hex", () => {
+            const encrypted = encryptPassword("test", "key");
+            const parts = encrypted.split(":");
+            expect(parts).toHaveLength(3);
+            // All parts should be hex
+            for (const part of parts) {
+                expect(part).toMatch(/^[0-9a-f]+$/);
+            }
         });
     });
 });
