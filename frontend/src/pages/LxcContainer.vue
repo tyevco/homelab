@@ -111,7 +111,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="lxc-endpoint" class="form-label">{{ $t("dockgeAgent") }}</label>
+                                <label for="lxc-endpoint" class="form-label">{{ $t("homelabAgent") }}</label>
                                 <select id="lxc-endpoint" v-model="container.endpoint" class="form-select">
                                     <option v-for="(agent, ep) in $root.agentList" :key="ep" :value="ep" :disabled="$root.agentStatusList[ep] != 'online'">
                                         ({{ $root.agentStatusList[ep] }}) {{ (ep) ? ep : $t("currentEndpoint") }}

@@ -1,11 +1,11 @@
 import { AgentSocketHandler } from "../agent-socket-handler";
-import { DockgeServer } from "../dockge-server";
-import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
+import { HomelabServer } from "../homelab-server";
+import { callbackError, callbackResult, checkLogin, HomelabSocket, ValidationError } from "../util-server";
 import { Stack } from "../stack";
 import { AgentSocket } from "../../common/agent-socket";
 
 export class DockerSocketHandler extends AgentSocketHandler {
-    create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+    create(socket : HomelabSocket, server : HomelabServer, agentSocket : AgentSocket) {
         // Do not call super.create()
 
         agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
@@ -77,7 +77,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
 
                 const stack = await Stack.getStack(server, stackName);
 
-                if (stack.isManagedByDockge) {
+                if (stack.isManagedByHomelab) {
                     stack.joinCombinedTerminal(socket);
                 }
 
@@ -253,7 +253,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
     }
 
-    async saveStack(server : DockgeServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown) : Promise<Stack> {
+    async saveStack(server : HomelabServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown) : Promise<Stack> {
         // Check types
         if (typeof(name) !== "string") {
             throw new ValidationError("Name must be a string");

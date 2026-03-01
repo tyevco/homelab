@@ -1,5 +1,5 @@
-import { DockgeServer } from "../dockge-server";
-import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
+import { HomelabServer } from "../homelab-server";
+import { callbackError, callbackResult, checkLogin, HomelabSocket, ValidationError } from "../util-server";
 import { log } from "../log";
 import { InteractiveTerminal, MainTerminal, Terminal } from "../terminal";
 import { Stack } from "../stack";
@@ -7,7 +7,7 @@ import { AgentSocketHandler } from "../agent-socket-handler";
 import { AgentSocket } from "../../common/agent-socket";
 
 export class TerminalSocketHandler extends AgentSocketHandler {
-    create(socket : DockgeSocket, server : DockgeServer, agentSocket : AgentSocket) {
+    create(socket : HomelabSocket, server : HomelabServer, agentSocket : AgentSocket) {
 
         agentSocket.on("terminalInput", async (terminalName : unknown, cmd : unknown, callback) => {
             try {

@@ -43,7 +43,7 @@ async function initRandomBytes() {
     }
 }
 
-export const ALL_ENDPOINTS = "##ALL_DOCKGE_ENDPOINTS##";
+export const ALL_ENDPOINTS = "##ALL_HOMELAB_ENDPOINTS##";
 
 // Stack Status
 export const UNKNOWN = 0;

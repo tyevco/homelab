@@ -1,6 +1,6 @@
-import { DockgeServer } from "./dockge-server";
-import { DockgeSocket } from "./util-server";
+import { HomelabServer } from "./homelab-server";
+import { HomelabSocket } from "./util-server";
 
 export abstract class SocketHandler {
-    abstract create(socket : DockgeSocket, server : DockgeServer): void;
+    abstract create(socket : HomelabSocket, server : HomelabServer): void;
 }

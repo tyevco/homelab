@@ -1,10 +1,10 @@
 // Generate on GitHub
 const input = `
-* Fixed envsubst issue by @louislam in https://github.com/louislam/dockge/pull/301
-* Fix: Only adding folders to stack with a compose file. by @Ozy-Viking in https://github.com/louislam/dockge/pull/299
-* Terminal text cols adjusts to terminal container.  by @Ozy-Viking in https://github.com/louislam/dockge/pull/285
-* Update Docker Dompose plugin to 2.23.3 by @louislam in https://github.com/louislam/dockge/pull/303
-* Translations update from Kuma Weblate by @UptimeKumaBot in https://github.com/louislam/dockge/pull/302
+* Fixed envsubst issue by @tyevco in https://github.com/tyevco/homelab/pull/301
+* Fix: Only adding folders to stack with a compose file. by @Ozy-Viking in https://github.com/tyevco/homelab/pull/299
+* Terminal text cols adjusts to terminal container.  by @Ozy-Viking in https://github.com/tyevco/homelab/pull/285
+* Update Docker Dompose plugin to 2.23.3 by @tyevco in https://github.com/tyevco/homelab/pull/303
+* Translations update from Kuma Weblate by @UptimeKumaBot in https://github.com/tyevco/homelab/pull/302
 `;
 
 const template = `
@@ -57,7 +57,7 @@ for (const line of lines) {
     message = message.split("* ").pop();
 
     let thanks = "";
-    if (username != "@louislam") {
+    if (username != "@tyevco") {
         thanks = `(Thanks ${username})`;
     }
 

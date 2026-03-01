@@ -21,7 +21,7 @@ import { R } from "redbean-node";
 import { genSecret, isDev, LooseObject } from "../common/util-common";
 import { generatePasswordHash } from "./password-hash";
 import { Bean } from "redbean-node/dist/bean";
-import { Arguments, Config, DockgeSocket } from "./util-server";
+import { Arguments, Config, HomelabSocket } from "./util-server";
 import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handler";
 import { LxcSocketHandler } from "./agent-socket-handlers/lxc-socket-handler";
 import { LxcContainer } from "./lxc-container";
@@ -40,7 +40,7 @@ import { AgentSocket } from "../common/agent-socket";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
 import { Terminal } from "./terminal";
 
-export class DockgeServer {
+export class HomelabServer {
     app : Express;
     httpServer : http.Server;
     packageJSON : PackageJson;
@@ -92,7 +92,7 @@ export class DockgeServer {
         // Catch unexpected errors here
         let unexpectedErrorHandler = (error : unknown) => {
             console.trace(error);
-            console.error("If you keep encountering errors, please report to https://github.com/louislam/dockge");
+            console.error("If you keep encountering errors, please report to https://github.com/tyevco/homelab");
         };
         process.addListener("unhandledRejection", unexpectedErrorHandler);
         process.addListener("uncaughtException", unexpectedErrorHandler);
@@ -152,14 +152,14 @@ export class DockgeServer {
         this.config = args as Config;
 
         // Load from environment variables or default values if args are not set
-        this.config.sslKey = args.sslKey || process.env.DOCKGE_SSL_KEY || undefined;
-        this.config.sslCert = args.sslCert || process.env.DOCKGE_SSL_CERT || undefined;
-        this.config.sslKeyPassphrase = args.sslKeyPassphrase || process.env.DOCKGE_SSL_KEY_PASSPHRASE || undefined;
-        this.config.port = args.port || Number(process.env.DOCKGE_PORT) || 5001;
-        this.config.hostname = args.hostname || process.env.DOCKGE_HOSTNAME || undefined;
-        this.config.dataDir = args.dataDir || process.env.DOCKGE_DATA_DIR || "./data/";
-        this.config.stacksDir = args.stacksDir || process.env.DOCKGE_STACKS_DIR || defaultStacksDir;
-        this.config.enableConsole = args.enableConsole || process.env.DOCKGE_ENABLE_CONSOLE === "true" || false;
+        this.config.sslKey = args.sslKey || process.env.HOMELAB_SSL_KEY || undefined;
+        this.config.sslCert = args.sslCert || process.env.HOMELAB_SSL_CERT || undefined;
+        this.config.sslKeyPassphrase = args.sslKeyPassphrase || process.env.HOMELAB_SSL_KEY_PASSPHRASE || undefined;
+        this.config.port = args.port || Number(process.env.HOMELAB_PORT) || 5001;
+        this.config.hostname = args.hostname || process.env.HOMELAB_HOSTNAME || undefined;
+        this.config.dataDir = args.dataDir || process.env.HOMELAB_DATA_DIR || "./data/";
+        this.config.stacksDir = args.stacksDir || process.env.HOMELAB_STACKS_DIR || defaultStacksDir;
+        this.config.enableConsole = args.enableConsole || process.env.HOMELAB_ENABLE_CONSOLE === "true" || false;
         this.stacksDir = this.config.stacksDir;
 
         log.debug("server", this.config);
@@ -254,39 +254,39 @@ export class DockgeServer {
         });
 
         this.io.on("connection", async (socket: Socket) => {
-            let dockgeSocket = socket as DockgeSocket;
-            dockgeSocket.instanceManager = new AgentManager(dockgeSocket);
-            dockgeSocket.emitAgent = (event : string, ...args : unknown[]) => {
+            let homelabSocket = socket as HomelabSocket;
+            homelabSocket.instanceManager = new AgentManager(homelabSocket);
+            homelabSocket.emitAgent = (event : string, ...args : unknown[]) => {
                 let obj = args[0];
                 if (typeof(obj) === "object") {
                     let obj2 = obj as LooseObject;
-                    obj2.endpoint = dockgeSocket.endpoint;
+                    obj2.endpoint = homelabSocket.endpoint;
                 }
-                dockgeSocket.emit("agent", event, ...args);
+                homelabSocket.emit("agent", event, ...args);
             };
 
             if (typeof(socket.request.headers.endpoint) === "string") {
-                dockgeSocket.endpoint = socket.request.headers.endpoint;
+                homelabSocket.endpoint = socket.request.headers.endpoint;
             } else {
-                dockgeSocket.endpoint = "";
+                homelabSocket.endpoint = "";
             }
 
-            if (dockgeSocket.endpoint) {
-                log.info("server", "Socket connected (agent), as endpoint " + dockgeSocket.endpoint);
+            if (homelabSocket.endpoint) {
+                log.info("server", "Socket connected (agent), as endpoint " + homelabSocket.endpoint);
             } else {
                 log.info("server", "Socket connected (direct)");
             }
 
-            this.sendInfo(dockgeSocket, true);
+            this.sendInfo(homelabSocket, true);
 
             if (this.needSetup) {
                 log.info("server", "Redirect to setup page");
-                dockgeSocket.emit("setup");
+                homelabSocket.emit("setup");
             }
 
             // Create socket handlers (original, no agent support)
             for (const socketHandler of this.socketHandlerList) {
-                socketHandler.create(dockgeSocket, this);
+                socketHandler.create(homelabSocket, this);
             }
 
             // Create Agent Socket
@@ -294,11 +294,11 @@ export class DockgeServer {
 
             // Create agent socket handlers
             for (const socketHandler of this.agentSocketHandlerList) {
-                socketHandler.create(dockgeSocket, this, agentSocket);
+                socketHandler.create(homelabSocket, this, agentSocket);
             }
 
             // Create agent proxy socket handlers
-            this.agentProxySocketHandler.create2(dockgeSocket, this, agentSocket);
+            this.agentProxySocketHandler.create2(homelabSocket, this, agentSocket);
 
             // ***************************
             // Better do anything after added all socket handlers here
@@ -307,16 +307,16 @@ export class DockgeServer {
             log.debug("auth", "check auto login");
             if (await Settings.get("disableAuth")) {
                 log.info("auth", "Disabled Auth: auto login to admin");
-                this.afterLogin(dockgeSocket, await R.findOne("user") as User);
-                dockgeSocket.emit("autoLogin");
+                this.afterLogin(homelabSocket, await R.findOne("user") as User);
+                homelabSocket.emit("autoLogin");
             } else {
                 log.debug("auth", "need auth");
             }
 
             // Socket disconnect
-            dockgeSocket.on("disconnect", () => {
+            homelabSocket.on("disconnect", () => {
                 log.info("server", "Socket disconnected!");
-                dockgeSocket.instanceManager.disconnectAll();
+                homelabSocket.instanceManager.disconnectAll();
             });
 
         });
@@ -332,7 +332,7 @@ export class DockgeServer {
         }
     }
 
-    async afterLogin(socket : DockgeSocket, user : User) {
+    async afterLogin(socket : HomelabSocket, user : User) {
         socket.userID = user.id;
         socket.join(user.id.toString());
 
@@ -354,7 +354,7 @@ export class DockgeServer {
 
         socket.instanceManager.sendAgentList();
 
-        // Also connect to other dockge instances
+        // Also connect to other homelab instances
         socket.instanceManager.connectAll();
     }
 
@@ -394,7 +394,7 @@ export class DockgeServer {
 
         log.debug("server", "User count: " + userCount);
 
-        // If there is no record in user table, it is a new Dockge instance, need to setup
+        // If there is no record in user table, it is a new Homelab instance, need to setup
         if (userCount == 0) {
             log.info("server", "No user, need setup");
             this.needSetup = true;
@@ -451,7 +451,7 @@ export class DockgeServer {
         if (!hideVersion) {
             versionProperty = packageJSON.version;
             latestVersionProperty = checkVersion.latestVersion;
-            isContainer = (process.env.DOCKGE_IS_CONTAINER === "1");
+            isContainer = (process.env.HOMELAB_IS_CONTAINER === "1");
         }
 
         socket.emit("info", {
@@ -612,10 +612,10 @@ export class DockgeServer {
         let stackList;
 
         for (let socket of socketList) {
-            let dockgeSocket = socket as DockgeSocket;
+            let homelabSocket = socket as HomelabSocket;
 
             // Check if the room is a number (user id)
-            if (dockgeSocket.userID) {
+            if (homelabSocket.userID) {
 
                 // Get the list only if there is a logged in user
                 if (!stackList) {
@@ -625,11 +625,11 @@ export class DockgeServer {
                 let map : Map<string, object> = new Map();
 
                 for (let [ stackName, stack ] of stackList) {
-                    map.set(stackName, stack.toSimpleJSON(dockgeSocket.endpoint));
+                    map.set(stackName, stack.toSimpleJSON(homelabSocket.endpoint));
                 }
 
-                log.debug("server", "Send stack list to user: " + dockgeSocket.id + " (" + dockgeSocket.endpoint + ")");
-                dockgeSocket.emitAgent("stackList", {
+                log.debug("server", "Send stack list to user: " + homelabSocket.id + " (" + homelabSocket.endpoint + ")");
+                homelabSocket.emitAgent("stackList", {
                     ok: true,
                     stackList: Object.fromEntries(map),
                 });
@@ -647,9 +647,9 @@ export class DockgeServer {
         let containerList;
 
         for (let socket of socketList) {
-            let dockgeSocket = socket as DockgeSocket;
+            let homelabSocket = socket as HomelabSocket;
 
-            if (dockgeSocket.userID) {
+            if (homelabSocket.userID) {
                 if (!containerList) {
                     containerList = await LxcContainer.getContainerList(this, useCache);
                 }
@@ -657,11 +657,11 @@ export class DockgeServer {
                 let map : Map<string, object> = new Map();
 
                 for (let [ containerName, container ] of containerList) {
-                    map.set(containerName, container.toSimpleJSON(dockgeSocket.endpoint));
+                    map.set(containerName, container.toSimpleJSON(homelabSocket.endpoint));
                 }
 
-                log.debug("server", "Send LXC container list to user: " + dockgeSocket.id + " (" + dockgeSocket.endpoint + ")");
-                dockgeSocket.emitAgent("lxcContainerList", {
+                log.debug("server", "Send LXC container list to user: " + homelabSocket.id + " (" + homelabSocket.endpoint + ")");
+                homelabSocket.emitAgent("lxcContainerList", {
                     ok: true,
                     lxcContainerList: Object.fromEntries(map),
                 });
@@ -724,7 +724,7 @@ export class DockgeServer {
      */
     disconnectAllSocketClients(userID: number | undefined, currentSocketID? : string) {
         for (const rawSocket of this.io.sockets.sockets.values()) {
-            let socket = rawSocket as DockgeSocket;
+            let socket = rawSocket as HomelabSocket;
             if ((!userID || socket.userID === userID) && socket.id !== currentSocketID) {
                 try {
                     socket.emit("refresh");

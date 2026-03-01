@@ -177,10 +177,10 @@ export default {
 
             result.sort((m1, m2) => {
 
-                // sort by managed by dockge
-                if (m1.isManagedByDockge && !m2.isManagedByDockge) {
+                // sort by managed by homelab
+                if (m1.isManagedByHomelab && !m2.isManagedByHomelab) {
                     return -1;
-                } else if (!m1.isManagedByDockge && m2.isManagedByDockge) {
+                } else if (!m1.isManagedByHomelab && m2.isManagedByHomelab) {
                     return 1;
                 }
 
