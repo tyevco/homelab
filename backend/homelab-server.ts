@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { MainRouter } from "./routers/main-router";
+import { LxcApiRouter } from "./routers/lxc-api-router";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -53,6 +54,7 @@ export class HomelabServer {
      */
     routerList : Router[] = [
         new MainRouter(),
+        new LxcApiRouter(),
     ];
 
     /**
@@ -191,6 +193,9 @@ export class HomelabServer {
             log.info("server", "Server Type: HTTP");
             this.httpServer = http.createServer(this.app);
         }
+
+        // Parse JSON request bodies
+        this.app.use(express.json());
 
         // Binding Routers
         for (const router of this.routerList) {
