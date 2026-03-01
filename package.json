@@ -27,7 +27,7 @@
     "mark-as-nightly": "tsx ./extra/mark-as-nightly.ts",
     "reformat-changelog": "tsx ./extra/reformat-changelog.ts",
     "reset-password": "tsx ./extra/reset-password.ts",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "lint-staged": {
     "*.{ts,vue}": [
