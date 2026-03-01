@@ -169,6 +169,72 @@ describe("Settings", () => {
         });
     });
 
+    describe("setSettings", () => {
+        it("should update existing beans that match the type", async () => {
+            const bean = { key: "host",
+                value: "",
+                type: "general" } as Record<string, unknown>;
+            vi.mocked(R.findOne).mockResolvedValue(bean as never);
+            vi.mocked(R.store).mockResolvedValue(undefined as never);
+
+            await Settings.setSettings("general", { host: "newhost" });
+            expect(bean.value).toBe(JSON.stringify("newhost"));
+            expect(R.store).toHaveBeenCalled();
+        });
+
+        it("should create new bean if not found", async () => {
+            const newBean = { key: "",
+                value: "",
+                type: "" } as Record<string, unknown>;
+            vi.mocked(R.findOne).mockResolvedValue(null as never);
+            vi.mocked(R.dispense).mockReturnValue(newBean as never);
+            vi.mocked(R.store).mockResolvedValue(undefined as never);
+
+            await Settings.setSettings("general", { newKey: "val" });
+            expect(newBean.type).toBe("general");
+            expect(newBean.key).toBe("newKey");
+            expect(newBean.value).toBe(JSON.stringify("val"));
+        });
+
+        it("should skip beans whose type does not match", async () => {
+            const bean = { key: "otherKey",
+                value: "old",
+                type: "other" } as Record<string, unknown>;
+            vi.mocked(R.findOne).mockResolvedValue(bean as never);
+            vi.mocked(R.store).mockResolvedValue(undefined as never);
+
+            await Settings.setSettings("general", { otherKey: "new" });
+            // store should NOT be called because bean.type !== "general"
+            expect(R.store).not.toHaveBeenCalled();
+            expect(bean.value).toBe("old");
+        });
+
+        it("should clear cache for all keys after update", async () => {
+            Settings.cacheList = {
+                a: { value: 1,
+                    timestamp: Date.now() },
+                b: { value: 2,
+                    timestamp: Date.now() },
+            };
+
+            const beanA = { key: "a",
+                value: "",
+                type: "t" } as Record<string, unknown>;
+            const beanB = { key: "b",
+                value: "",
+                type: "t" } as Record<string, unknown>;
+            vi.mocked(R.findOne)
+                .mockResolvedValueOnce(beanA as never)
+                .mockResolvedValueOnce(beanB as never);
+            vi.mocked(R.store).mockResolvedValue(undefined as never);
+
+            await Settings.setSettings("t", { a: "x",
+                b: "y" });
+            expect(Settings.cacheList).not.toHaveProperty("a");
+            expect(Settings.cacheList).not.toHaveProperty("b");
+        });
+    });
+
     describe("deleteCache", () => {
         it("should remove specified keys from cache", async () => {
             Settings.cacheList = {

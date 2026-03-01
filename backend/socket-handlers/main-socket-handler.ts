@@ -4,7 +4,7 @@ import { SocketHandler } from "../socket-handler.js";
 import { HomelabServer } from "../homelab-server";
 import { log } from "../log";
 import { R } from "redbean-node";
-import { loginRateLimiter, twoFaRateLimiter } from "../rate-limiter";
+import { loginRateLimiter } from "../rate-limiter";
 import { generatePasswordHash, needRehashPassword, shake256, SHAKE256_LENGTH, verifyPassword } from "../password-hash";
 import { User } from "../models/user";
 import {
@@ -256,7 +256,7 @@ export class MainSocketHandler extends SocketHandler {
                     await doubleCheckPassword(socket, currentPassword);
                 }
                 // Handle global.env
-                if (data.globalENV && data.globalENV != "# VARIABLE=value #comment") {
+                if (data.globalENV && data.globalENV !== "# VARIABLE=value #comment") {
                     await fsAsync.writeFile(path.join(server.stacksDir, "global.env"), data.globalENV);
                 } else {
                     await fsAsync.rm(path.join(server.stacksDir, "global.env"), {

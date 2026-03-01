@@ -168,7 +168,7 @@ describe("Terminal", () => {
 
             await expect(
                 Terminal.exec(mockServer, mockSocket, "busy-term", "bash", [], "/tmp")
-            ).rejects.toBe("Another operation is already running, please try again later.");
+            ).rejects.toThrow("Another operation is already running, please try again later.");
         });
 
         it("should not reject due to undefined socket", () => {

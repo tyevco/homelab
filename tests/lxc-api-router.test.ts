@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import express, { Express } from "express";
+import { describe, it, expect } from "vitest";
 import { RUNNING, FROZEN, EXITED, UNKNOWN } from "../common/util-common";
 
 // The CONTAINER_NAME_REGEX used in lxc-api-router.ts

@@ -387,11 +387,11 @@ export default {
                 if (res.ok) {
                     this.container = res.container;
                     this.originalConfig = this.container.config;
-                    this.processing = false;
                     this.bindTerminal();
                 } else {
                     this.$root.toastRes(res);
                 }
+                this.processing = false;
             });
         },
 
@@ -468,10 +468,13 @@ export default {
         },
 
         deleteContainer() {
+            this.processing = true;
             this.$root.emitAgent(this.endpoint, "deleteLxcContainer", this.container.name, (res) => {
                 this.$root.toastRes(res);
                 if (res.ok) {
                     this.$router.push("/");
+                } else {
+                    this.processing = false;
                 }
             });
         },

@@ -93,8 +93,8 @@ export class HomelabServer {
     constructor() {
         // Catch unexpected errors here
         let unexpectedErrorHandler = (error : unknown) => {
-            console.trace(error);
-            console.error("If you keep encountering errors, please report to https://github.com/tyevco/homelab");
+            log.error("server", error);
+            log.error("server", "If you keep encountering errors, please report to https://github.com/tyevco/homelab");
         };
         process.addListener("unhandledRejection", unexpectedErrorHandler);
         process.addListener("uncaughtException", unexpectedErrorHandler);
@@ -312,7 +312,7 @@ export class HomelabServer {
             log.debug("auth", "check auto login");
             if (await Settings.get("disableAuth")) {
                 log.info("auth", "Disabled Auth: auto login to admin");
-                this.afterLogin(homelabSocket, await R.findOne("user") as User);
+                await this.afterLogin(homelabSocket, await R.findOne("user") as User);
                 homelabSocket.emit("autoLogin");
             } else {
                 log.debug("auth", "need auth");
@@ -341,26 +341,26 @@ export class HomelabServer {
         socket.userID = user.id;
         socket.join(user.id.toString());
 
-        this.sendInfo(socket);
+        await this.sendInfo(socket);
 
         try {
-            this.sendStackList();
+            await this.sendStackList();
         } catch (e) {
             log.error("server", e);
         }
 
         if (this.lxcAvailable) {
             try {
-                this.sendLxcContainerList();
+                await this.sendLxcContainerList();
             } catch (e) {
                 log.error("server", e);
             }
         }
 
-        socket.instanceManager.sendAgentList();
+        await socket.instanceManager.sendAgentList();
 
         // Also connect to other homelab instances
-        socket.instanceManager.connectAll();
+        await socket.instanceManager.connectAll();
     }
 
     /**

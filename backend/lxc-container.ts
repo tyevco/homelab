@@ -182,7 +182,7 @@ export class LxcContainer {
                 container._status = this.statusConvert(row["state"] || "");
                 container._ip = row["ipv4"] || "";
                 container._autostart = (row["autostart"] || "").trim() === "1";
-                container._pid = parseInt(row["pid"] || "0") || 0;
+                container._pid = parseInt(row["pid"] || "0", 10) || 0;
                 container._memory = row["memory"] || "";
 
                 containerList.set(name, container);
@@ -262,7 +262,7 @@ export class LxcContainer {
 
                 const pidMatch = output.match(/^PID:\s+(.+)$/m);
                 if (pidMatch) {
-                    container._pid = parseInt(pidMatch[1].trim()) || 0;
+                    container._pid = parseInt(pidMatch[1].trim(), 10) || 0;
                 }
 
                 const memMatch = output.match(/^Memory use:\s+(.+)$/m);
