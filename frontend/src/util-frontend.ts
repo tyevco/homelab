@@ -3,6 +3,10 @@ import timezones from "timezones-list";
 import { localeDirection, currentLocale } from "./i18n";
 import { POSITION } from "vue-toastification";
 
+declare const DEVCONTAINER: string | undefined;
+declare const CODESPACE_NAME: string | undefined;
+declare const GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: string | undefined;
+
 /**
  * Returns the offset from UTC in hours for the current locale.
  * @param {string} timeZone Timezone to get offset for
@@ -134,7 +138,7 @@ export function loadToastSettings() {
         containerClassName: "toast-container",
         showCloseButtonOnHover: true,
 
-        filterBeforeCreate: (toast, toasts) => {
+        filterBeforeCreate: (toast: { timeout?: number }, toasts: unknown[]) => {
             if (toast.timeout === 0) {
                 return false;
             } else {
@@ -148,8 +152,8 @@ export function loadToastSettings() {
  * Get timeout for success toasts
  * @returns {(number|boolean)} Timeout in ms. If false timeout disabled.
  */
-export function getToastSuccessTimeout() {
-    let successTimeout = 20000;
+export function getToastSuccessTimeout(): number | false {
+    let successTimeout: number = 20000;
 
     if (localStorage.toastSuccessTimeout !== undefined) {
         const parsedTimeout = parseInt(localStorage.toastSuccessTimeout, 10);
@@ -159,7 +163,7 @@ export function getToastSuccessTimeout() {
     }
 
     if (successTimeout === -1) {
-        successTimeout = false;
+        return false;
     }
 
     return successTimeout;
@@ -169,8 +173,8 @@ export function getToastSuccessTimeout() {
  * Get timeout for error toasts
  * @returns {(number|boolean)} Timeout in ms. If false timeout disabled.
  */
-export function getToastErrorTimeout() {
-    let errorTimeout = -1;
+export function getToastErrorTimeout(): number | false {
+    let errorTimeout: number = -1;
 
     if (localStorage.toastErrorTimeout !== undefined) {
         const parsedTimeout = parseInt(localStorage.toastErrorTimeout, 10);
@@ -180,7 +184,7 @@ export function getToastErrorTimeout() {
     }
 
     if (errorTimeout === -1) {
-        errorTimeout = false;
+        return false;
     }
 
     return errorTimeout;
