@@ -1,7 +1,7 @@
-import { DockgeServer } from "./dockge-server";
+import { HomelabServer } from "./homelab-server";
 import fs, { promises as fsAsync } from "fs";
 import { log } from "./log";
-import { DockgeSocket, ValidationError } from "./util-server";
+import { HomelabSocket, ValidationError } from "./util-server";
 import path from "path";
 import {
     EXITED,
@@ -27,11 +27,11 @@ export class LxcContainer {
     protected _pid?: number;
     protected _memory?: string;
     protected _config?: string;
-    protected server: DockgeServer;
+    protected server: HomelabServer;
 
     protected static cachedContainerList: Map<string, LxcContainer> = new Map();
 
-    constructor(server: DockgeServer, name: string) {
+    constructor(server: HomelabServer, name: string) {
         this.name = name;
         this.server = server;
     }
@@ -58,7 +58,7 @@ export class LxcContainer {
             type: STACK_TYPE_LXC,
             tags: [],
             endpoint,
-            isManagedByDockge: true,
+            isManagedByHomelab: true,
         };
     }
 
@@ -154,7 +154,7 @@ export class LxcContainer {
     /**
      * Get list of all LXC containers
      */
-    static async getContainerList(server: DockgeServer, useCache = false): Promise<Map<string, LxcContainer>> {
+    static async getContainerList(server: HomelabServer, useCache = false): Promise<Map<string, LxcContainer>> {
         if (useCache && this.cachedContainerList.size > 0) {
             return this.cachedContainerList;
         }
@@ -233,7 +233,7 @@ export class LxcContainer {
     /**
      * Get a single container by name
      */
-    static async getContainer(server: DockgeServer, name: string): Promise<LxcContainer> {
+    static async getContainer(server: HomelabServer, name: string): Promise<LxcContainer> {
         // Validate name
         if (!name.match(/^[a-zA-Z0-9_.-]+$/)) {
             throw new ValidationError("Invalid LXC container name");
@@ -322,7 +322,7 @@ export class LxcContainer {
     /**
      * Create a new LXC container
      */
-    static async create(server: DockgeServer, socket: DockgeSocket, name: string, dist: string, release: string, arch: string): Promise<number> {
+    static async create(server: HomelabServer, socket: HomelabSocket, name: string, dist: string, release: string, arch: string): Promise<number> {
         // Validate inputs
         if (!name.match(/^[a-z0-9_.-]+$/)) {
             throw new ValidationError("Container name can only contain [a-z][0-9] _ . - characters");
@@ -351,7 +351,7 @@ export class LxcContainer {
         return exitCode;
     }
 
-    async start(socket: DockgeSocket): Promise<number> {
+    async start(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-start", ["-n", this.name], LXC_PATH);
         if (exitCode !== 0) {
@@ -360,7 +360,7 @@ export class LxcContainer {
         return exitCode;
     }
 
-    async stop(socket: DockgeSocket): Promise<number> {
+    async stop(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-stop", ["-n", this.name], LXC_PATH);
         if (exitCode !== 0) {
@@ -369,7 +369,7 @@ export class LxcContainer {
         return exitCode;
     }
 
-    async restart(socket: DockgeSocket): Promise<number> {
+    async restart(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-stop", ["-n", this.name], LXC_PATH);
         if (exitCode !== 0) {
@@ -382,7 +382,7 @@ export class LxcContainer {
         return exitCode;
     }
 
-    async freeze(socket: DockgeSocket): Promise<number> {
+    async freeze(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-freeze", ["-n", this.name], LXC_PATH);
         if (exitCode !== 0) {
@@ -391,7 +391,7 @@ export class LxcContainer {
         return exitCode;
     }
 
-    async unfreeze(socket: DockgeSocket): Promise<number> {
+    async unfreeze(socket: HomelabSocket): Promise<number> {
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
         const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-unfreeze", ["-n", this.name], LXC_PATH);
         if (exitCode !== 0) {
@@ -400,7 +400,7 @@ export class LxcContainer {
         return exitCode;
     }
 
-    async delete(socket: DockgeSocket): Promise<number> {
+    async delete(socket: HomelabSocket): Promise<number> {
         // Stop first if running
         if (this._status === RUNNING || this._status === FROZEN) {
             const terminalName = getLxcTerminalName(socket.endpoint, this.name);
@@ -426,7 +426,7 @@ export class LxcContainer {
         this._config = configContent;
     }
 
-    async joinExecTerminal(socket: DockgeSocket, shell: string = "/bin/bash"): Promise<void> {
+    async joinExecTerminal(socket: HomelabSocket, shell: string = "/bin/bash"): Promise<void> {
         const terminalName = getLxcExecTerminalName(socket.endpoint, this.name, 0);
         let terminal = Terminal.getTerminal(terminalName);
 

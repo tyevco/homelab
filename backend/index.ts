@@ -1,6 +1,6 @@
-import { DockgeServer } from "./dockge-server";
+import { HomelabServer } from "./homelab-server";
 import { log } from "./log";
 
-log.info("server", "Welcome to dockge!");
-const server = new DockgeServer();
+log.info("server", "Welcome to Homelab!");
+const server = new HomelabServer();
 await server.serve();

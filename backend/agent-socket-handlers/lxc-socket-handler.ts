@@ -1,11 +1,11 @@
 import { AgentSocketHandler } from "../agent-socket-handler";
-import { DockgeServer } from "../dockge-server";
-import { callbackError, callbackResult, checkLogin, DockgeSocket, ValidationError } from "../util-server";
+import { HomelabServer } from "../homelab-server";
+import { callbackError, callbackResult, checkLogin, HomelabSocket, ValidationError } from "../util-server";
 import { LxcContainer } from "../lxc-container";
 import { AgentSocket } from "../../common/agent-socket";
 
 export class LxcSocketHandler extends AgentSocketHandler {
-    create(socket: DockgeSocket, server: DockgeServer, agentSocket: AgentSocket) {
+    create(socket: HomelabSocket, server: HomelabServer, agentSocket: AgentSocket) {
 
         agentSocket.on("getLxcContainer", async (name: unknown, callback) => {
             try {

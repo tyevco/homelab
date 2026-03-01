@@ -1,5 +1,5 @@
 ⚠️⚠️⚠️ Since we do not accept all types of pull requests and do not want to waste your time. Please be sure that you have read pull request rules:
-https://github.com/louislam/dockge/blob/master/CONTRIBUTING.md
+https://github.com/tyevco/homelab/blob/master/CONTRIBUTING.md
 
 Tick the checkbox if you understand [x]: 
 - [ ] I have read and understand the pull request rules.

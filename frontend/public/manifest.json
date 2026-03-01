@@ -1,6 +1,6 @@
 {
-    "name": "Dockge",
-    "short_name": "Dockge",
+    "name": "Homelab",
+    "short_name": "Homelab",
     "start_url": "/",
     "background_color": "#fff",
     "display": "standalone",

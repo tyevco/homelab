@@ -9,8 +9,8 @@ import github from "@actions/github";
         const client = github.getOctokit(token).rest;
 
         const issue = {
-            owner: "louislam",
-            repo: "dockge",
+            owner: "tyevco",
+            repo: "homelab",
             number: issueNumber,
         };
 
