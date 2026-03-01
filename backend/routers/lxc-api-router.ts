@@ -15,8 +15,6 @@ export class LxcApiRouter extends Router {
     create(app: Express, server: HomelabServer): ExpressRouter {
         const router = express.Router();
 
-        router.use(express.json());
-
         // Auth middleware
         const auth = async (req: Request, res: Response, next: NextFunction) => {
             try {

@@ -69,8 +69,8 @@ describe("rebrand verification", () => {
     it("should use HomelabServer as the server class name", () => {
         try {
             execSync(
-                "grep -r \"HomelabServer\" --include=\"*.ts\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8" }
+                "grep -r \"HomelabServer\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.ts\" -l .",
+                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
             );
         } catch {
             expect.fail("HomelabServer class not found in codebase");
@@ -80,8 +80,8 @@ describe("rebrand verification", () => {
     it("should use HomelabSocket as the socket interface name", () => {
         try {
             execSync(
-                "grep -r \"HomelabSocket\" --include=\"*.ts\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8" }
+                "grep -r \"HomelabSocket\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.ts\" -l .",
+                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
             );
         } catch {
             expect.fail("HomelabSocket interface not found in codebase");
@@ -91,8 +91,8 @@ describe("rebrand verification", () => {
     it("should use HOMELAB_ prefix for environment variables", () => {
         try {
             execSync(
-                "grep -r \"HOMELAB_\" --include=\"*.ts\" --include=\"*.go\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8" }
+                "grep -r \"HOMELAB_\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.ts\" --include=\"*.go\" -l .",
+                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
             );
         } catch {
             expect.fail("No HOMELAB_ environment variables found in codebase");
@@ -102,8 +102,8 @@ describe("rebrand verification", () => {
     it("should reference ghcr.io/tyevco/homelab in Docker config", () => {
         try {
             execSync(
-                "grep -r \"ghcr.io/tyevco/homelab\" --include=\"*.json\" --include=\"*.yaml\" --include=\"*.yml\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8" }
+                "grep -r \"ghcr.io/tyevco/homelab\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.json\" --include=\"*.yaml\" --include=\"*.yml\" -l .",
+                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
             );
         } catch {
             expect.fail("No ghcr.io/tyevco/homelab references found");
