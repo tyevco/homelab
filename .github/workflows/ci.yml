@@ -38,7 +38,9 @@ jobs:
       - name: Check Typescript
         run: npm run check-ts
 
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build:frontend
-      # more things can be add later like tests etc..
 

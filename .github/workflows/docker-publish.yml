@@ -21,6 +21,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci --omit=optional
+
+      - name: Test
+        run: npm test
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
