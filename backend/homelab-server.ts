@@ -400,7 +400,8 @@ export class HomelabServer {
 
         this.jwtSecret = jwtSecretBean.value;
 
-        const userCount = (await R.knex("user").count("id as count").first()).count;
+        const userCountResult = await R.knex("user").count("id as count").first();
+        const userCount = userCountResult?.count ?? 0;
 
         log.debug("server", "User count: " + userCount);
 

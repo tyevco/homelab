@@ -35,7 +35,8 @@ export class MainSocketHandler extends SocketHandler {
                     throw new Error("Password is too weak. It should contain alphabetic and numeric characters. It must be at least 6 characters in length.");
                 }
 
-                if ((await R.knex("user").count("id as count").first()).count !== 0) {
+                const userCountResult = await R.knex("user").count("id as count").first();
+                if ((userCountResult?.count ?? 0) !== 0) {
                     throw new Error("Homelab has been initialized. If you want to run setup again, please delete the database.");
                 }
 
@@ -75,7 +76,7 @@ export class MainSocketHandler extends SocketHandler {
 
                 const user = await R.findOne("user", " username = ? AND active = 1 ", [
                     decoded.username,
-                ]) as User;
+                ]) as User | null;
 
                 if (user) {
                     // Check if the password changed
@@ -329,7 +330,7 @@ export class MainSocketHandler extends SocketHandler {
 
         const user = await R.findOne("user", " username = ? AND active = 1 ", [
             username,
-        ]) as User;
+        ]) as User | null;
 
         if (user && verifyPassword(password, user.password)) {
             // Upgrade the hash to bcrypt
