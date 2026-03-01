@@ -13,7 +13,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 log.debug("manage-agent-socket-handler", "addAgent");
                 checkLogin(socket);
 
-                if (typeof(requestData) !== "object") {
+                if (requestData === null || typeof(requestData) !== "object") {
                     throw new Error("Data must be an object");
                 }
 
@@ -28,7 +28,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 // Refresh another sockets
                 // It is a bit difficult to control another browser sessions to connect/disconnect agents, so force them to refresh the page will be easier.
                 server.disconnectAllSocketClients(undefined, socket.id);
-                manager.sendAgentList();
+                await manager.sendAgentList();
 
                 callbackResult({
                     ok: true,
@@ -55,7 +55,7 @@ export class ManageAgentSocketHandler extends SocketHandler {
                 await manager.remove(url);
 
                 server.disconnectAllSocketClients(undefined, socket.id);
-                manager.sendAgentList();
+                await manager.sendAgentList();
 
                 callbackResult({
                     ok: true,

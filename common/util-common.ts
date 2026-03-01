@@ -386,7 +386,7 @@ export function parseDockerPort(input : string, hostname : string) {
 
     let portInt = parseInt(port, 10);
 
-    if (portInt == 443) {
+    if (portInt === 443) {
         protocol = "https";
     } else if (protocol === "tcp") {
         protocol = "http";
