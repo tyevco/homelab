@@ -400,7 +400,7 @@ export class HomelabServer {
         log.debug("server", "User count: " + userCount);
 
         // If there is no record in user table, it is a new Homelab instance, need to setup
-        if (userCount == 0) {
+        if (Number(userCount) === 0) {
             log.info("server", "No user, need setup");
             this.needSetup = true;
         }

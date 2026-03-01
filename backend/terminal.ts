@@ -201,6 +201,7 @@ export class Terminal {
 
     close() {
         clearInterval(this.keepAliveInterval);
+        clearInterval(this.kickDisconnectedClientsInterval);
         // Send Ctrl+C to the terminal
         this.ptyProcess?.write("\x03");
     }

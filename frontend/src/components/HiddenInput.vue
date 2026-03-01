@@ -50,8 +50,8 @@ export default {
         },
         /** Should the input be read only? */
         readonly: {
-            type: String,
-            default: undefined,
+            type: Boolean,
+            default: false,
         },
     },
     emits: [ "update:modelValue" ],
