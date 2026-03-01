@@ -2,7 +2,7 @@
 import { createI18n } from "vue-i18n/dist/vue-i18n.esm-browser.prod.js";
 import en from "./lang/en.json";
 
-const languageList = {
+const languageList: Record<string, string> = {
     "bg-BG": "Български",
     "es": "Español",
     "de": "Deutsch",
@@ -37,7 +37,7 @@ const languageList = {
     "mai": "मैथिली",
 };
 
-let messages = {
+let messages: Record<string, Record<string, string>> = {
     en,
 };
 
