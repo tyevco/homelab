@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("redbean-node/dist/bean-model", () => ({
     BeanModel: class BeanModel {
         [key: string]: unknown;
+        constructor(_type?: string, _R?: unknown) { }
     },
 }));
 
@@ -19,7 +20,7 @@ import { R } from "redbean-node";
 
 // Helper to create a mock Agent with url property
 function createMockAgent(url: string, username: string): Agent {
-    const agent = new Agent();
+    const agent = new (Agent as unknown as new () => Agent)();
     (agent as unknown as Record<string, string>).url = url;
     (agent as unknown as Record<string, string>).username = username;
     return agent;

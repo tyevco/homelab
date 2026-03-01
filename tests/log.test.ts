@@ -103,6 +103,14 @@ describe("Logger", () => {
         });
     });
 
+    describe("debug", () => {
+        it("should not call console.debug in non-dev mode", () => {
+            log.debug("test", "debug message");
+            // In test env, NODE_ENV is not "development", so debug is suppressed
+            expect(debugSpy).not.toHaveBeenCalled();
+        });
+    });
+
     describe("log level routing", () => {
         it("should route unknown levels to console.log", () => {
             log.log("test", "custom level message", "CUSTOM");

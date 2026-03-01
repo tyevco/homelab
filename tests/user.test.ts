@@ -6,6 +6,7 @@ import { shake256, SHAKE256_LENGTH } from "../backend/password-hash";
 vi.mock("redbean-node/dist/bean-model", () => ({
     BeanModel: class BeanModel {
         [key: string]: unknown;
+        constructor(_type?: string, _R?: unknown) { }
     },
 }));
 
@@ -97,7 +98,7 @@ describe("User", () => {
         it("should update instance password to the hash", async () => {
             vi.mocked(R.exec).mockResolvedValue(undefined as never);
 
-            const user = new User();
+            const user = new (User as unknown as new () => User)();
             (user as unknown as Record<string, unknown>).id = 10;
             user.password = "old_hash";
 

@@ -120,7 +120,7 @@
 </template>
 
 <script>
-import { statusNameShort, FROZEN } from "../../../common/util-common";
+import { statusNameShort } from "../../../common/util-common";
 
 export default {
     components: {

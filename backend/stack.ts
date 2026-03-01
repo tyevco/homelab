@@ -12,7 +12,6 @@ import {
     CREATED_STACK,
     EXITED, getCombinedTerminalName,
     getComposeTerminalName, getContainerExecTerminalName,
-    PROGRESS_TERMINAL_ROWS,
     RUNNING, TERMINAL_ROWS,
     UNKNOWN
 } from "../common/util-common";
