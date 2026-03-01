@@ -104,7 +104,7 @@ export class MainSocketHandler extends SocketHandler {
                 }
             } catch (error) {
                 if (!(error instanceof Error)) {
-                    console.error("Unknown error:", error);
+                    log.error("auth", "Unknown error: " + error);
                     return;
                 }
                 log.error("auth", `Invalid token. IP=${clientIP}`);

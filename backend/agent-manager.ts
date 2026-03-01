@@ -33,10 +33,12 @@ export class AgentManager {
 
             if (!endpoint) {
                 reject(new Error("Invalid Homelab URL"));
+                return;
             }
 
             if (this.agentSocketList[endpoint]) {
                 reject(new Error("The Homelab URL already exists"));
+                return;
             }
 
             let client = io(url, {
@@ -99,7 +101,7 @@ export class AgentManager {
             await R.trash(bean);
             let endpoint = bean.endpoint;
             this.disconnect(endpoint);
-            this.sendAgentList();
+            await this.sendAgentList();
             delete this.agentSocketList[endpoint];
         } else {
             throw new Error("Agent not found");

@@ -1,9 +1,88 @@
-import { describe, it, expect, vi } from "vitest";
-import { ValidationError, callbackError, callbackResult, fileExists } from "../backend/util-server";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { ValidationError, callbackError, callbackResult, fileExists, checkLogin, doubleCheckPassword } from "../backend/util-server";
+import type { HomelabSocket } from "../backend/util-server";
 import { ERROR_TYPE_VALIDATION } from "../common/util-common";
 import path from "path";
 
+// Mock redbean-node
+vi.mock("redbean-node", () => ({
+    R: {
+        findOne: vi.fn(),
+    }
+}));
+
+// Mock password-hash
+vi.mock("../backend/password-hash", () => ({
+    verifyPassword: vi.fn(),
+}));
+
+import { R } from "redbean-node";
+import { verifyPassword } from "../backend/password-hash";
+
 describe("util-server", () => {
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    describe("checkLogin", () => {
+        it("should throw when userID is falsy (0)", () => {
+            const socket = { userID: 0 } as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).toThrow("You are not logged in.");
+        });
+
+        it("should throw when userID is undefined", () => {
+            const socket = {} as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).toThrow("You are not logged in.");
+        });
+
+        it("should not throw when userID is set", () => {
+            const socket = { userID: 42 } as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).not.toThrow();
+        });
+    });
+
+    describe("doubleCheckPassword", () => {
+        it("should throw for non-string password", async () => {
+            const socket = { userID: 1 } as unknown as HomelabSocket;
+            await expect(doubleCheckPassword(socket, 123))
+                .rejects.toThrow("Wrong data type?");
+        });
+
+        it("should throw for undefined password", async () => {
+            const socket = { userID: 1 } as unknown as HomelabSocket;
+            await expect(doubleCheckPassword(socket, undefined))
+                .rejects.toThrow("Wrong data type?");
+        });
+
+        it("should throw when user is not found", async () => {
+            const socket = { userID: 999 } as unknown as HomelabSocket;
+            vi.mocked(R.findOne).mockResolvedValue(null as never);
+
+            await expect(doubleCheckPassword(socket, "password"))
+                .rejects.toThrow("Incorrect current password");
+        });
+
+        it("should throw when password does not match", async () => {
+            const socket = { userID: 1 } as unknown as HomelabSocket;
+            vi.mocked(R.findOne).mockResolvedValue({ password: "hashed" } as never);
+            vi.mocked(verifyPassword).mockReturnValue(false);
+
+            await expect(doubleCheckPassword(socket, "wrong"))
+                .rejects.toThrow("Incorrect current password");
+        });
+
+        it("should return user when password matches", async () => {
+            const socket = { userID: 1 } as unknown as HomelabSocket;
+            const user = { id: 1,
+                password: "hashed" };
+            vi.mocked(R.findOne).mockResolvedValue(user as never);
+            vi.mocked(verifyPassword).mockReturnValue(true);
+
+            const result = await doubleCheckPassword(socket, "correct");
+            expect(result).toBe(user);
+        });
+    });
 
     describe("ValidationError", () => {
         it("should create an error with the given message", () => {

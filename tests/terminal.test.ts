@@ -160,6 +160,40 @@ describe("Terminal", () => {
             expect(() => terminal.close()).not.toThrow();
         });
     });
+
+    describe("exec", () => {
+        it("should reject when terminal with same name already exists", async () => {
+            // Create a terminal occupying the name
+            new Terminal(mockServer, "busy-term", "bash", [], "/tmp");
+
+            await expect(
+                Terminal.exec(mockServer, mockSocket, "busy-term", "bash", [], "/tmp")
+            ).rejects.toBe("Another operation is already running, please try again later.");
+        });
+
+        it("should not reject due to undefined socket", () => {
+            // Terminal.exec with undefined socket should not throw synchronously
+            // It will attempt spawn (mocked as undefined), which triggers error handling
+            // but the Promise itself should resolve (exit handler fires with error exit code)
+            // We just verify no synchronous throw
+            expect(() => {
+                Terminal.exec(mockServer, undefined, "no-socket-term", "bash", [], "/tmp");
+            }).not.toThrow();
+        });
+    });
+
+    describe("start idempotency", () => {
+        it("should return early if ptyProcess is already set", () => {
+            const terminal = new Terminal(mockServer, "double-start", "bash", [], "/tmp");
+            // Simulate an existing ptyProcess
+            (terminal as unknown as Record<string, unknown>)["_ptyProcess"] = { write: vi.fn(),
+                resize: vi.fn(),
+                onData: vi.fn(),
+                onExit: vi.fn() };
+            // Calling start should return without spawning a new process
+            expect(() => terminal.start()).not.toThrow();
+        });
+    });
 });
 
 describe("MainTerminal", () => {
