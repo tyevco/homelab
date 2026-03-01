@@ -735,7 +735,7 @@ export class HomelabServer {
                     socket.emit("refresh");
                     socket.disconnect();
                 } catch (e) {
-
+                    log.debug("server", "Error disconnecting socket: " + e);
                 }
             }
         }

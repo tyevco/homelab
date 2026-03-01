@@ -542,6 +542,8 @@ export class Stack {
                         });
                     }
                 } catch (e) {
+                    // Non-JSON lines (empty lines, trailing newlines) are expected
+                    log.debug("getServiceStatusList", "Skipping non-JSON line: " + line);
                 }
             }
 
