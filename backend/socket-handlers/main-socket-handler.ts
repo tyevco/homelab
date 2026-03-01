@@ -145,7 +145,7 @@ export class MainSocketHandler extends SocketHandler {
 
             if (user) {
                 if (user.twofa_status === 0) {
-                    server.afterLogin(socket, user);
+                    await server.afterLogin(socket, user);
 
                     log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
 
@@ -153,45 +153,22 @@ export class MainSocketHandler extends SocketHandler {
                         ok: true,
                         token: User.createJWT(user, server.jwtSecret),
                     });
-                }
-
-                if (user.twofa_status === 1 && !data.token) {
+                } else if (user.twofa_status === 1 && !data.token) {
 
                     log.info("auth", `2FA token required for user ${data.username}. IP=${clientIP}`);
 
                     callback({
                         tokenRequired: true,
                     });
-                }
+                } else if (user.twofa_status === 1 && data.token) {
+                    // 2FA verification is not yet implemented (notp package not installed)
+                    log.warn("auth", `2FA is enabled for user ${data.username} but verification is not implemented. IP=${clientIP}`);
 
-                if (data.token) {
-                    // @ts-ignore
-                    const verify = notp.totp.verify(data.token, user.twofa_secret, twoFAVerifyOptions);
-
-                    if (user.twofa_last_token !== data.token && verify) {
-                        server.afterLogin(socket, user);
-
-                        await R.exec("UPDATE `user` SET twofa_last_token = ? WHERE id = ? ", [
-                            data.token,
-                            socket.userID,
-                        ]);
-
-                        log.info("auth", `Successfully logged in user ${data.username}. IP=${clientIP}`);
-
-                        callback({
-                            ok: true,
-                            token: User.createJWT(user, server.jwtSecret),
-                        });
-                    } else {
-
-                        log.warn("auth", `Invalid token provided for user ${data.username}. IP=${clientIP}`);
-
-                        callback({
-                            ok: false,
-                            msg: "authInvalidToken",
-                            msgi18n: true,
-                        });
-                    }
+                    callback({
+                        ok: false,
+                        msg: "2FA verification is not available",
+                        msgi18n: true,
+                    });
                 }
             } else {
 
