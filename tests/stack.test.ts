@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Stack } from "../backend/stack";
 import { ValidationError } from "../backend/util-server";
+import { CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../common/util-common";
 import type { HomelabServer } from "../backend/homelab-server";
 
 const mockServer = { stacksDir: "/tmp/stacks" } as HomelabServer;
@@ -84,6 +85,59 @@ describe("Stack", () => {
             expect(json.endpoint).toBe("ep1");
             expect(json.tags).toEqual([]);
             expect(json.composeFileName).toBe("compose.yaml");
+        });
+
+        it("should reflect non-default composeFileName", () => {
+            const stack = new Stack(mockServer, "test-stack", "version: '3'\n", "", true);
+            // Force non-default compose file name
+            (stack as unknown as Record<string, string>)["_composeFileName"] = "docker-compose.yml";
+            const json = stack.toSimpleJSON("ep1") as Record<string, unknown>;
+            expect(json.composeFileName).toBe("docker-compose.yml");
+        });
+
+        it("should reflect current status", () => {
+            const stack = new Stack(mockServer, "running-stack", "version: '3'\n", "", true);
+            (stack as unknown as Record<string, number>)["_status"] = RUNNING;
+            const json = stack.toSimpleJSON("") as Record<string, unknown>;
+            expect(json.status).toBe(RUNNING);
+        });
+
+        it("should default status to UNKNOWN", () => {
+            const stack = new Stack(mockServer, "new-stack", "version: '3'\n", "", true);
+            const json = stack.toSimpleJSON("") as Record<string, unknown>;
+            expect(json.status).toBe(UNKNOWN);
+        });
+    });
+
+    describe("statusConvert", () => {
+        it("should convert 'created' to CREATED_STACK", () => {
+            expect(Stack.statusConvert("created(1)")).toBe(CREATED_STACK);
+        });
+
+        it("should convert 'running' to RUNNING", () => {
+            expect(Stack.statusConvert("running(2)")).toBe(RUNNING);
+        });
+
+        it("should convert 'exited' to EXITED", () => {
+            expect(Stack.statusConvert("exited(1)")).toBe(EXITED);
+        });
+
+        it("should prioritize exited over running in mixed status", () => {
+            expect(Stack.statusConvert("exited(1), running(1)")).toBe(EXITED);
+        });
+
+        it("should return UNKNOWN for unrecognized status", () => {
+            expect(Stack.statusConvert("paused(1)")).toBe(UNKNOWN);
+            expect(Stack.statusConvert("")).toBe(UNKNOWN);
+        });
+    });
+
+    describe("path", () => {
+        it("should join stacksDir with name", () => {
+            const stack = new Stack(mockServer, "my-stack", "", "", true);
+            // path.join normalizes separators
+            expect(stack.path).toContain("my-stack");
+            expect(stack.path).toContain("stacks");
         });
     });
 });
