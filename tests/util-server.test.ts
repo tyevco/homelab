@@ -34,7 +34,8 @@ describe("util-server", () => {
     describe("callbackResult", () => {
         it("should call callback with the result", () => {
             const callback = vi.fn();
-            const result = { ok: true, data: "test" };
+            const result = { ok: true,
+                data: "test" };
             callbackResult(result, callback);
             expect(callback).toHaveBeenCalledWith(result);
         });

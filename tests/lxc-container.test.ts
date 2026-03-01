@@ -6,6 +6,11 @@ import type { HomelabServer } from "../backend/homelab-server";
 // Minimal mock server for constructing LxcContainer instances
 const mockServer = {} as HomelabServer;
 
+// Helper to access private properties in tests
+function internals(container: LxcContainer): Record<string, unknown> {
+    return container as unknown as Record<string, unknown>;
+}
+
 describe("LxcContainer", () => {
 
     describe("statusConvert", () => {
@@ -111,9 +116,9 @@ describe("LxcContainer", () => {
             const container = new LxcContainer(mockServer, "test-container");
 
             // Access the toJSON method - need to set _config to avoid file read
-            (container as any)._config = "lxc.net.0.type = veth";
+            internals(container)._config = "lxc.net.0.type = veth";
 
-            const json = container.toJSON("ep1") as any;
+            const json = container.toJSON("ep1") as Record<string, unknown>;
             expect(json.name).toBe("test-container");
             expect(json.status).toBe(UNKNOWN);
             expect(json.type).toBe(STACK_TYPE_LXC);
@@ -128,14 +133,14 @@ describe("LxcContainer", () => {
 
         it("should include populated fields", () => {
             const container = new LxcContainer(mockServer, "web-server");
-            (container as any)._status = RUNNING;
-            (container as any)._ip = "10.0.3.5";
-            (container as any)._autostart = true;
-            (container as any)._pid = 5678;
-            (container as any)._memory = "128.00 MiB";
-            (container as any)._config = "";
+            internals(container)._status = RUNNING;
+            internals(container)._ip = "10.0.3.5";
+            internals(container)._autostart = true;
+            internals(container)._pid = 5678;
+            internals(container)._memory = "128.00 MiB";
+            internals(container)._config = "";
 
-            const json = container.toJSON("agent1") as any;
+            const json = container.toJSON("agent1") as Record<string, unknown>;
             expect(json.name).toBe("web-server");
             expect(json.status).toBe(RUNNING);
             expect(json.ip).toBe("10.0.3.5");
@@ -149,9 +154,9 @@ describe("LxcContainer", () => {
     describe("toSimpleJSON", () => {
         it("should return simplified JSON structure", () => {
             const container = new LxcContainer(mockServer, "simple-test");
-            (container as any)._status = EXITED;
+            internals(container)._status = EXITED;
 
-            const json = container.toSimpleJSON("ep2") as any;
+            const json = container.toSimpleJSON("ep2") as Record<string, unknown>;
             expect(json.name).toBe("simple-test");
             expect(json.status).toBe(EXITED);
             expect(json.type).toBe(STACK_TYPE_LXC);
@@ -183,7 +188,7 @@ describe("LxcContainer", () => {
         const createRegex = /^[a-z0-9_.-]+$/;
 
         it("should accept valid lowercase names", () => {
-            const validNames = ["mycontainer", "web-server", "db.01", "test_box", "a1.b2-c3"];
+            const validNames = [ "mycontainer", "web-server", "db.01", "test_box", "a1.b2-c3" ];
             for (const name of validNames) {
                 expect(routerRegex.test(name)).toBe(true);
                 expect(getContainerRegex.test(name)).toBe(true);
@@ -202,7 +207,7 @@ describe("LxcContainer", () => {
         });
 
         it("should reject names with special characters", () => {
-            const invalidNames = ["my@container", "test!", "name/path", "container;rm", "$(cmd)"];
+            const invalidNames = [ "my@container", "test!", "name/path", "container;rm", "$(cmd)" ];
             for (const name of invalidNames) {
                 expect(routerRegex.test(name)).toBe(false);
                 expect(getContainerRegex.test(name)).toBe(false);

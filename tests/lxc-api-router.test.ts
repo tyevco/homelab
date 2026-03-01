@@ -14,7 +14,7 @@ describe("LxcApiRouter validation", () => {
 
     describe("CONTAINER_NAME_REGEX", () => {
         it("should accept valid container names", () => {
-            const valid = ["mycontainer", "web-server", "db.01", "test_box", "a1.b2-c3", "123"];
+            const valid = [ "mycontainer", "web-server", "db.01", "test_box", "a1.b2-c3", "123" ];
             for (const name of valid) {
                 expect(CONTAINER_NAME_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
             }
@@ -56,7 +56,7 @@ describe("LxcApiRouter validation", () => {
 
     describe("distribution name validation", () => {
         it("should accept valid distribution names", () => {
-            const valid = ["ubuntu", "debian", "centos", "alpine", "archlinux", "Ubuntu-22.04"];
+            const valid = [ "ubuntu", "debian", "centos", "alpine", "archlinux", "Ubuntu-22.04" ];
             for (const name of valid) {
                 expect(DIST_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
             }
@@ -76,7 +76,7 @@ describe("LxcApiRouter validation", () => {
 
     describe("release name validation", () => {
         it("should accept valid release names", () => {
-            const valid = ["jammy", "22.04", "bullseye", "3.18", "focal-fossa"];
+            const valid = [ "jammy", "22.04", "bullseye", "3.18", "focal-fossa" ];
             for (const name of valid) {
                 expect(RELEASE_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
             }
@@ -90,7 +90,7 @@ describe("LxcApiRouter validation", () => {
 
     describe("architecture validation", () => {
         it("should accept valid architectures", () => {
-            const valid = ["amd64", "arm64", "i386", "armhf", "x86_64"];
+            const valid = [ "amd64", "arm64", "i386", "armhf", "x86_64" ];
             for (const name of valid) {
                 expect(ARCH_REGEX.test(name), `expected "${name}" to be valid`).toBe(true);
             }
@@ -109,24 +109,29 @@ describe("LxcApiRouter validation", () => {
 
     describe("create endpoint required field validation", () => {
         // Simulates the validation logic from the POST /api/lxc/ handler
-        function validateCreateFields(body: Record<string, any>): { ok: boolean; msg?: string } {
+        function validateCreateFields(body: Record<string, string>): { ok: boolean; msg?: string } {
             const { name, dist, release, arch } = body;
 
             if (!name || !dist || !release || !arch) {
-                return { ok: false, msg: "Missing required fields: name, dist, release, arch" };
+                return { ok: false,
+                    msg: "Missing required fields: name, dist, release, arch" };
             }
 
             if (!CONTAINER_NAME_REGEX.test(name)) {
-                return { ok: false, msg: "Container name can only contain [a-z][0-9] _ . - characters" };
+                return { ok: false,
+                    msg: "Container name can only contain [a-z][0-9] _ . - characters" };
             }
             if (!DIST_REGEX.test(dist)) {
-                return { ok: false, msg: "Invalid distribution name" };
+                return { ok: false,
+                    msg: "Invalid distribution name" };
             }
             if (!RELEASE_REGEX.test(release)) {
-                return { ok: false, msg: "Invalid release name" };
+                return { ok: false,
+                    msg: "Invalid release name" };
             }
             if (!ARCH_REGEX.test(arch)) {
-                return { ok: false, msg: "Invalid architecture" };
+                return { ok: false,
+                    msg: "Invalid architecture" };
             }
 
             return { ok: true };
@@ -143,28 +148,39 @@ describe("LxcApiRouter validation", () => {
         });
 
         it("should reject missing name", () => {
-            const result = validateCreateFields({ dist: "ubuntu", release: "22.04", arch: "amd64" });
+            const result = validateCreateFields({ dist: "ubuntu",
+                release: "22.04",
+                arch: "amd64" });
             expect(result.ok).toBe(false);
             expect(result.msg).toContain("Missing required fields");
         });
 
         it("should reject missing dist", () => {
-            const result = validateCreateFields({ name: "test", release: "22.04", arch: "amd64" });
+            const result = validateCreateFields({ name: "test",
+                release: "22.04",
+                arch: "amd64" });
             expect(result.ok).toBe(false);
         });
 
         it("should reject missing release", () => {
-            const result = validateCreateFields({ name: "test", dist: "ubuntu", arch: "amd64" });
+            const result = validateCreateFields({ name: "test",
+                dist: "ubuntu",
+                arch: "amd64" });
             expect(result.ok).toBe(false);
         });
 
         it("should reject missing arch", () => {
-            const result = validateCreateFields({ name: "test", dist: "ubuntu", release: "22.04" });
+            const result = validateCreateFields({ name: "test",
+                dist: "ubuntu",
+                release: "22.04" });
             expect(result.ok).toBe(false);
         });
 
         it("should reject empty strings as missing", () => {
-            const result = validateCreateFields({ name: "", dist: "ubuntu", release: "22.04", arch: "amd64" });
+            const result = validateCreateFields({ name: "",
+                dist: "ubuntu",
+                release: "22.04",
+                arch: "amd64" });
             expect(result.ok).toBe(false);
         });
 
@@ -204,12 +220,14 @@ describe("LxcApiRouter validation", () => {
 
     describe("config save validation", () => {
         // Simulates validation from PUT /api/lxc/:name/config
-        function validateConfigSave(name: string, config: any): { ok: boolean; msg?: string } {
+        function validateConfigSave(name: string, config: unknown): { ok: boolean; msg?: string } {
             if (!CONTAINER_NAME_REGEX.test(name)) {
-                return { ok: false, msg: "Invalid container name" };
+                return { ok: false,
+                    msg: "Invalid container name" };
             }
             if (typeof config !== "string") {
-                return { ok: false, msg: "Missing required field: config" };
+                return { ok: false,
+                    msg: "Missing required field: config" };
             }
             return { ok: true };
         }

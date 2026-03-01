@@ -20,7 +20,9 @@ describe("rebrand verification", () => {
         try {
             const result = execSync(
                 `grep ${flag} "${pattern}" --exclude-dir=node_modules --exclude-dir=.git --include="*.ts" --include="*.vue" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.go" --include="*.md" --include="*.js" --include="*.html" .`,
-                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
+                { cwd: ROOT_DIR,
+                    encoding: "utf-8",
+                    timeout: 30000 }
             );
             return result
                 .trim()
@@ -70,7 +72,9 @@ describe("rebrand verification", () => {
         try {
             execSync(
                 "grep -r \"HomelabServer\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.ts\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
+                { cwd: ROOT_DIR,
+                    encoding: "utf-8",
+                    timeout: 30000 }
             );
         } catch {
             expect.fail("HomelabServer class not found in codebase");
@@ -81,7 +85,9 @@ describe("rebrand verification", () => {
         try {
             execSync(
                 "grep -r \"HomelabSocket\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.ts\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
+                { cwd: ROOT_DIR,
+                    encoding: "utf-8",
+                    timeout: 30000 }
             );
         } catch {
             expect.fail("HomelabSocket interface not found in codebase");
@@ -92,7 +98,9 @@ describe("rebrand verification", () => {
         try {
             execSync(
                 "grep -r \"HOMELAB_\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.ts\" --include=\"*.go\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
+                { cwd: ROOT_DIR,
+                    encoding: "utf-8",
+                    timeout: 30000 }
             );
         } catch {
             expect.fail("No HOMELAB_ environment variables found in codebase");
@@ -103,7 +111,9 @@ describe("rebrand verification", () => {
         try {
             execSync(
                 "grep -r \"ghcr.io/tyevco/homelab\" --exclude-dir=node_modules --exclude-dir=.git --include=\"*.json\" --include=\"*.yaml\" --include=\"*.yml\" -l .",
-                { cwd: ROOT_DIR, encoding: "utf-8", timeout: 30000 }
+                { cwd: ROOT_DIR,
+                    encoding: "utf-8",
+                    timeout: 30000 }
             );
         } catch {
             expect.fail("No ghcr.io/tyevco/homelab references found");
