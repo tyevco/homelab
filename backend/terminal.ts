@@ -134,6 +134,7 @@ export class Terminal {
         } catch (error) {
             if (error instanceof Error) {
                 clearInterval(this.keepAliveInterval);
+                clearInterval(this.kickDisconnectedClientsInterval);
 
                 log.error("Terminal", "Failed to start terminal: " + error.message);
                 const exitCode = Number(error.message.split(" ").pop());
