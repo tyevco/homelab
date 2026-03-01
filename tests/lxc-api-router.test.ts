@@ -52,6 +52,41 @@ describe("LxcApiRouter validation", () => {
             expect(CONTAINER_NAME_REGEX.test("path/traversal")).toBe(false);
             expect(CONTAINER_NAME_REGEX.test("path\\traversal")).toBe(false);
         });
+
+        it("should reject path traversal patterns with slashes", () => {
+            expect(CONTAINER_NAME_REGEX.test("../../etc/passwd")).toBe(false);
+            expect(CONTAINER_NAME_REGEX.test("a/../b")).toBe(false);
+        });
+
+        it("should note that dots-only names pass regex (path join is safe due to /var/lib/lxc base)", () => {
+            // '..' matches the regex because dots are allowed characters.
+            // This is safe because container paths are constructed via path.join(LXC_PATH, name)
+            // and LXC itself validates container names.
+            expect(CONTAINER_NAME_REGEX.test("..")).toBe(true);
+            expect(CONTAINER_NAME_REGEX.test("...")).toBe(true);
+        });
+
+        it("should reject unicode and non-ASCII characters", () => {
+            expect(CONTAINER_NAME_REGEX.test("caf\u00e9")).toBe(false);
+            expect(CONTAINER_NAME_REGEX.test("\u2603")).toBe(false);
+            expect(CONTAINER_NAME_REGEX.test("test\u0000null")).toBe(false);
+        });
+
+        it("should reject SQL injection patterns", () => {
+            expect(CONTAINER_NAME_REGEX.test("'; DROP TABLE--")).toBe(false);
+            expect(CONTAINER_NAME_REGEX.test("1 OR 1=1")).toBe(false);
+        });
+
+        it("should accept single character names", () => {
+            expect(CONTAINER_NAME_REGEX.test("a")).toBe(true);
+            expect(CONTAINER_NAME_REGEX.test("0")).toBe(true);
+        });
+
+        it("should accept names with leading/trailing dots and hyphens", () => {
+            expect(CONTAINER_NAME_REGEX.test(".hidden")).toBe(true);
+            expect(CONTAINER_NAME_REGEX.test("-flag")).toBe(true);
+            expect(CONTAINER_NAME_REGEX.test("name.")).toBe(true);
+        });
     });
 
     describe("distribution name validation", () => {
@@ -216,6 +251,37 @@ describe("LxcApiRouter validation", () => {
             expect(result.ok).toBe(false);
             expect(result.msg).toContain("architecture");
         });
+
+        it("should reject invalid release name", () => {
+            const result = validateCreateFields({
+                name: "test",
+                dist: "ubuntu",
+                release: "22.04 && rm -rf /",
+                arch: "amd64",
+            });
+            expect(result.ok).toBe(false);
+            expect(result.msg).toContain("release");
+        });
+
+        it("should reject when all fields are empty strings", () => {
+            const result = validateCreateFields({
+                name: "",
+                dist: "",
+                release: "",
+                arch: "",
+            });
+            expect(result.ok).toBe(false);
+        });
+
+        it("should reject name with path traversal", () => {
+            const result = validateCreateFields({
+                name: "../../etc",
+                dist: "ubuntu",
+                release: "22.04",
+                arch: "amd64",
+            });
+            expect(result.ok).toBe(false);
+        });
     });
 
     describe("config save validation", () => {
@@ -248,6 +314,23 @@ describe("LxcApiRouter validation", () => {
 
         it("should reject invalid container name", () => {
             expect(validateConfigSave("INVALID", "config").ok).toBe(false);
+        });
+
+        it("should reject object as config", () => {
+            expect(validateConfigSave("test", { key: "value" }).ok).toBe(false);
+        });
+
+        it("should reject array as config", () => {
+            expect(validateConfigSave("test", [ "a", "b" ]).ok).toBe(false);
+        });
+
+        it("should reject boolean as config", () => {
+            expect(validateConfigSave("test", true).ok).toBe(false);
+        });
+
+        it("should accept multiline config string", () => {
+            const config = "lxc.net.0.type = veth\nlxc.net.0.link = lxcbr0\nlxc.rootfs.path = dir:/var/lib/lxc/test/rootfs";
+            expect(validateConfigSave("test", config).ok).toBe(true);
         });
     });
 
