@@ -235,7 +235,7 @@ export class LxcContainer {
      */
     static async getContainer(server: HomelabServer, name: string): Promise<LxcContainer> {
         // Validate name
-        if (!name.match(/^[a-zA-Z0-9_.-]+$/)) {
+        if (!name.match(/^[a-z0-9_.-]+$/)) {
             throw new ValidationError("Invalid LXC container name");
         }
 

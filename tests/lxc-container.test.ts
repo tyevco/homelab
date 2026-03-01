@@ -109,6 +109,76 @@ describe("LxcContainer", () => {
             expect(result[0]["name"]).toBe("mybox");
             expect(result[0]["state"]).toBe("FROZEN");
         });
+
+        it("should return empty array for whitespace-only input", () => {
+            expect(LxcContainer.parseLxcLsOutput("   \n  \n")).toEqual([]);
+        });
+
+        it("should return empty array for header with no matching columns", () => {
+            expect(LxcContainer.parseLxcLsOutput("   \n")).toEqual([]);
+        });
+
+        it("should handle containers with hyphen placeholders", () => {
+            const output =
+                "NAME       STATE    IPV4   AUTOSTART  PID    MEMORY\n" +
+                "stopped1   STOPPED  -      0          -1     -\n";
+
+            const result = LxcContainer.parseLxcLsOutput(output);
+            expect(result).toHaveLength(1);
+            expect(result[0]["ipv4"]).toBe("-");
+            expect(result[0]["memory"]).toBe("-");
+        });
+
+        it("should handle many containers", () => {
+            // Header column positions determine field boundaries
+            let output = "NAME            STATE\n";
+            for (let i = 0; i < 100; i++) {
+                const name = `container${i.toString().padStart(3, "0")}`;
+                output += `${name.padEnd(16)}RUNNING\n`;
+            }
+            const result = LxcContainer.parseLxcLsOutput(output);
+            expect(result).toHaveLength(100);
+            expect(result[0]["name"]).toBe("container000");
+            expect(result[99]["name"]).toBe("container099");
+        });
+
+        it("should lowercase all header names", () => {
+            const output =
+                "NAME       STATE    IPV4\n" +
+                "test1      RUNNING  10.0.3.1\n";
+
+            const result = LxcContainer.parseLxcLsOutput(output);
+            expect(result[0]).toHaveProperty("name");
+            expect(result[0]).toHaveProperty("state");
+            expect(result[0]).toHaveProperty("ipv4");
+            // Should NOT have uppercase keys
+            expect(result[0]).not.toHaveProperty("NAME");
+            expect(result[0]).not.toHaveProperty("STATE");
+        });
+
+        it("should handle containers with long names", () => {
+            const longName = "a".repeat(50);
+            const output =
+                "NAME                                                STATE\n" +
+                `${longName.padEnd(52)}RUNNING\n`;
+
+            const result = LxcContainer.parseLxcLsOutput(output);
+            expect(result).toHaveLength(1);
+            expect(result[0]["name"]).toBe(longName);
+        });
+
+        it("should handle mixed separator and empty lines", () => {
+            const output =
+                "NAME       STATE\n" +
+                "----------\n" +
+                "\n" +
+                "test1      RUNNING\n" +
+                "----------\n" +
+                "test2      STOPPED\n";
+
+            const result = LxcContainer.parseLxcLsOutput(output);
+            expect(result).toHaveLength(2);
+        });
     });
 
     describe("toJSON", () => {
@@ -180,47 +250,50 @@ describe("LxcContainer", () => {
     });
 
     describe("container name validation patterns", () => {
-        // The CONTAINER_NAME_REGEX used in the router: /^[a-z0-9_.-]+$/
-        const routerRegex = /^[a-z0-9_.-]+$/;
-        // The regex used in LxcContainer.getContainer: /^[a-zA-Z0-9_.-]+$/
-        const getContainerRegex = /^[a-zA-Z0-9_.-]+$/;
-        // The regex used in LxcContainer.create: /^[a-z0-9_.-]+$/
-        const createRegex = /^[a-z0-9_.-]+$/;
+        // All name regexes are now aligned to lowercase-only: /^[a-z0-9_.-]+$/
+        const nameRegex = /^[a-z0-9_.-]+$/;
 
         it("should accept valid lowercase names", () => {
             const validNames = [ "mycontainer", "web-server", "db.01", "test_box", "a1.b2-c3" ];
             for (const name of validNames) {
-                expect(routerRegex.test(name)).toBe(true);
-                expect(getContainerRegex.test(name)).toBe(true);
-                expect(createRegex.test(name)).toBe(true);
+                expect(nameRegex.test(name)).toBe(true);
             }
         });
 
         it("should reject empty names", () => {
-            expect(routerRegex.test("")).toBe(false);
-            expect(getContainerRegex.test("")).toBe(false);
+            expect(nameRegex.test("")).toBe(false);
         });
 
         it("should reject names with spaces", () => {
-            expect(routerRegex.test("my container")).toBe(false);
-            expect(getContainerRegex.test("my container")).toBe(false);
+            expect(nameRegex.test("my container")).toBe(false);
         });
 
         it("should reject names with special characters", () => {
             const invalidNames = [ "my@container", "test!", "name/path", "container;rm", "$(cmd)" ];
             for (const name of invalidNames) {
-                expect(routerRegex.test(name)).toBe(false);
-                expect(getContainerRegex.test(name)).toBe(false);
+                expect(nameRegex.test(name)).toBe(false);
             }
         });
 
-        it("router regex should reject uppercase (create path is lowercase-only)", () => {
-            expect(routerRegex.test("MyContainer")).toBe(false);
-            expect(createRegex.test("MyContainer")).toBe(false);
+        it("should reject uppercase letters", () => {
+            expect(nameRegex.test("MyContainer")).toBe(false);
+            expect(nameRegex.test("ABC")).toBe(false);
         });
 
-        it("getContainer regex allows uppercase for querying existing containers", () => {
-            expect(getContainerRegex.test("MyContainer")).toBe(true);
+        it("should reject path traversal with slashes", () => {
+            expect(nameRegex.test("../etc")).toBe(false);
+            expect(nameRegex.test("a/../b")).toBe(false);
+        });
+
+        it("should accept single character names", () => {
+            expect(nameRegex.test("a")).toBe(true);
+            expect(nameRegex.test("1")).toBe(true);
+        });
+
+        it("should accept names with only dots, hyphens, or underscores", () => {
+            expect(nameRegex.test("...")).toBe(true);
+            expect(nameRegex.test("---")).toBe(true);
+            expect(nameRegex.test("___")).toBe(true);
         });
     });
 });
