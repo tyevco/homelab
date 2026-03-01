@@ -248,6 +248,15 @@ export class Terminal {
     public static getTerminalCount() {
         return Terminal.terminalMap.size;
     }
+
+    /**
+     * Remove a socket from all terminals immediately (on disconnect)
+     */
+    public static cleanupSocket(socket : HomelabSocket) {
+        for (const terminal of Terminal.terminalMap.values()) {
+            terminal.leave(socket);
+        }
+    }
 }
 
 /**

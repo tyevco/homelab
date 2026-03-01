@@ -329,6 +329,7 @@ export class HomelabServer {
             homelabSocket.on("disconnect", () => {
                 log.info("server", "Socket disconnected!");
                 homelabSocket.instanceManager.disconnectAll();
+                Terminal.cleanupSocket(homelabSocket);
             });
 
         });
