@@ -1,8 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Stack } from "../backend/stack";
 import { ValidationError } from "../backend/util-server";
 import { CREATED_STACK, EXITED, RUNNING, UNKNOWN } from "../common/util-common";
 import type { HomelabServer } from "../backend/homelab-server";
+
+vi.mock("promisify-child-process", () => ({
+    default: {
+        spawn: vi.fn(),
+    },
+}));
+
+import childProcessAsync from "promisify-child-process";
 
 const mockServer = { stacksDir: "/tmp/stacks" } as HomelabServer;
 
@@ -138,6 +146,87 @@ describe("Stack", () => {
             // path.join normalizes separators
             expect(stack.path).toContain("my-stack");
             expect(stack.path).toContain("stacks");
+        });
+    });
+
+    describe("ps", () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+        });
+
+        it("should return empty object when stdout is empty", async () => {
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({ stdout: "" } as never);
+            const stack = new Stack(mockServer, "test-stack", "", "", true);
+            const result = await stack.ps();
+            expect(result).toEqual({});
+        });
+
+        it("should return empty object when stdout is null", async () => {
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({ stdout: null } as never);
+            const stack = new Stack(mockServer, "test-stack", "", "", true);
+            const result = await stack.ps();
+            expect(result).toEqual({});
+        });
+
+        it("should parse valid JSON stdout", async () => {
+            const psOutput = [{
+                Name: "web",
+                State: "running",
+            }];
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({
+                stdout: JSON.stringify(psOutput),
+            } as never);
+            const stack = new Stack(mockServer, "test-stack", "", "", true);
+            const result = await stack.ps();
+            expect(result).toEqual(psOutput);
+        });
+
+        it("should return empty object for malformed JSON stdout", async () => {
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({
+                stdout: "not valid json{{{",
+            } as never);
+            const stack = new Stack(mockServer, "test-stack", "", "", true);
+            const result = await stack.ps();
+            expect(result).toEqual({});
+        });
+    });
+
+    describe("getStatusList", () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+        });
+
+        it("should return empty map when stdout is empty", async () => {
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({ stdout: "" } as never);
+            const result = await Stack.getStatusList();
+            expect(result.size).toBe(0);
+        });
+
+        it("should parse valid compose ls output", async () => {
+            const lsOutput = [
+                {
+                    Name: "web-app",
+                    Status: "running(1)",
+                },
+                {
+                    Name: "db",
+                    Status: "exited(1)",
+                },
+            ];
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({
+                stdout: JSON.stringify(lsOutput),
+            } as never);
+            const result = await Stack.getStatusList();
+            expect(result.get("web-app")).toBe(RUNNING);
+            expect(result.get("db")).toBe(EXITED);
+        });
+
+        it("should return empty map for malformed JSON", async () => {
+            vi.mocked(childProcessAsync.spawn).mockResolvedValue({
+                stdout: "invalid json!!!",
+            } as never);
+            const result = await Stack.getStatusList();
+            expect(result.size).toBe(0);
         });
     });
 });
