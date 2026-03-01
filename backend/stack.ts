@@ -99,7 +99,12 @@ export class Stack {
         if (!res.stdout) {
             return {};
         }
-        return JSON.parse(res.stdout.toString());
+        try {
+            return JSON.parse(res.stdout.toString());
+        } catch (e) {
+            log.warn("stack", "Failed to parse docker compose ps output");
+            return {};
+        }
     }
 
     get isManagedByHomelab() : boolean {
@@ -308,7 +313,13 @@ export class Stack {
             return stackList;
         }
 
-        let composeList = JSON.parse(res.stdout.toString());
+        let composeList;
+        try {
+            composeList = JSON.parse(res.stdout.toString());
+        } catch (e) {
+            log.warn("stack", "Failed to parse docker compose ls output");
+            return stackList;
+        }
 
         for (let composeStack of composeList) {
             let stack = stackList.get(composeStack.Name);
@@ -345,7 +356,13 @@ export class Stack {
             return statusList;
         }
 
-        let composeList = JSON.parse(res.stdout.toString());
+        let composeList;
+        try {
+            composeList = JSON.parse(res.stdout.toString());
+        } catch (e) {
+            log.warn("stack", "Failed to parse docker compose ls output");
+            return statusList;
+        }
 
         for (let composeStack of composeList) {
             statusList.set(composeStack.Name, this.statusConvert(composeStack.Status));

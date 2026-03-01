@@ -273,7 +273,7 @@ export class MainSocketHandler extends SocketHandler {
                     msg: "Saved"
                 });
 
-                server.sendInfo(socket);
+                await server.sendInfo(socket);
 
             } catch (e) {
                 if (e instanceof Error) {

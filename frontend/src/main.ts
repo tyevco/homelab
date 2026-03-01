@@ -69,7 +69,7 @@ function rootApp() {
             toastRes(res) {
                 let msg = res.msg;
                 if (res.msgi18n) {
-                    if (msg != null && typeof msg === "object") {
+                    if (msg !== null && typeof msg === "object") {
                         msg = this.$t(msg.key, msg.values);
                     } else {
                         msg = this.$t(msg);

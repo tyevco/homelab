@@ -49,6 +49,9 @@ class CheckVersion {
         };
 
         await check();
+        if (this.interval) {
+            clearInterval(this.interval);
+        }
         this.interval = setInterval(check, UPDATE_CHECKER_INTERVAL_MS);
     }
 }

@@ -152,8 +152,8 @@ export function getToastSuccessTimeout() {
     let successTimeout = 20000;
 
     if (localStorage.toastSuccessTimeout !== undefined) {
-        const parsedTimeout = parseInt(localStorage.toastSuccessTimeout);
-        if (parsedTimeout != null && !Number.isNaN(parsedTimeout)) {
+        const parsedTimeout = parseInt(localStorage.toastSuccessTimeout, 10);
+        if (!Number.isNaN(parsedTimeout)) {
             successTimeout = parsedTimeout;
         }
     }
@@ -173,8 +173,8 @@ export function getToastErrorTimeout() {
     let errorTimeout = -1;
 
     if (localStorage.toastErrorTimeout !== undefined) {
-        const parsedTimeout = parseInt(localStorage.toastErrorTimeout);
-        if (parsedTimeout != null && !Number.isNaN(parsedTimeout)) {
+        const parsedTimeout = parseInt(localStorage.toastErrorTimeout, 10);
+        if (!Number.isNaN(parsedTimeout)) {
             errorTimeout = parsedTimeout;
         }
     }
