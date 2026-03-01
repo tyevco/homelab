@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import yaml from "yaml";
 import {
     intHash,
     sleep,
@@ -211,6 +212,108 @@ describe("util-common", () => {
         it("should handle host:port range mapping", () => {
             const result = parseDockerPort("9090-9091:8080-8081", "localhost");
             expect(result.url).toBe("http://localhost:9090");
+        });
+
+        it("should detect https for standalone port 443", () => {
+            const result = parseDockerPort("443", "myhost");
+            expect(result.url).toBe("https://myhost:443");
+        });
+
+        it("should handle IP:port with port 443 as https", () => {
+            const result = parseDockerPort("10.0.0.1:443:443", "localhost");
+            expect(result.url).toBe("https://10.0.0.1:443");
+        });
+
+        it("should handle docker ps format with IP binding (uses hostname param)", () => {
+            // Arrow format strips the IP and uses the hostname parameter
+            const result = parseDockerPort("192.168.1.5:3000->3000/tcp", "localhost");
+            expect(result.url).toBe("http://localhost:3000");
+        });
+
+        it("should default to tcp protocol when none specified", () => {
+            const result = parseDockerPort("8080:8080", "localhost");
+            expect(result.url).toBe("http://localhost:8080");
+        });
+
+        it("should handle large port numbers", () => {
+            const result = parseDockerPort("49100:22", "myhost");
+            expect(result.url).toBe("http://myhost:49100");
+        });
+
+        it("should handle IP with port range", () => {
+            const result = parseDockerPort("127.0.0.1:5000-5010:5000-5010", "localhost");
+            expect(result.url).toBe("http://127.0.0.1:5000");
+        });
+
+        it("should handle host-only port range mapping", () => {
+            const result = parseDockerPort("8000-9000:80", "localhost");
+            expect(result.url).toBe("http://localhost:8000");
+        });
+
+        it("should return NaN in URL for non-numeric port", () => {
+            const result = parseDockerPort("abc", "localhost");
+            expect(result.url).toContain("NaN");
+        });
+    });
+
+    describe("envsubstYAML", () => {
+        it("should substitute variables in YAML values", () => {
+            const input = "services:\n  web:\n    image: ${IMAGE_NAME}\n";
+            const result = envsubstYAML(input, { IMAGE_NAME: "nginx:latest" });
+            expect(result).toContain("nginx:latest");
+            expect(result).not.toContain("${IMAGE_NAME}");
+        });
+
+        it("should leave unmatched variables intact", () => {
+            const input = "services:\n  web:\n    image: ${MISSING_VAR}\n";
+            const result = envsubstYAML(input, {});
+            expect(result).toContain("${MISSING_VAR}");
+        });
+
+        it("should handle YAML with no variables", () => {
+            const input = "services:\n  web:\n    image: nginx\n";
+            const result = envsubstYAML(input, { FOO: "bar" });
+            expect(result).toContain("nginx");
+        });
+
+        it("should handle nested YAML structures", () => {
+            const input = "services:\n  web:\n    environment:\n      DB_HOST: ${DB_HOST}\n";
+            const result = envsubstYAML(input, { DB_HOST: "db.local" });
+            expect(result).toContain("db.local");
+        });
+
+        it("should handle empty env object", () => {
+            const input = "version: '3'\n";
+            const result = envsubstYAML(input, {});
+            expect(result).toContain("'3'");
+        });
+    });
+
+    describe("copyYAMLComments", () => {
+        it("should copy top-level comments between documents", () => {
+
+            const src = yaml.parseDocument("# top comment\nkey: value\n");
+            const doc = yaml.parseDocument("key: value\n");
+            copyYAMLComments(doc, src);
+            expect(doc.commentBefore).toBe(src.commentBefore);
+        });
+
+        it("should handle documents with no contents gracefully", () => {
+
+            const src = yaml.parseDocument("");
+            const doc = yaml.parseDocument("");
+            expect(() => copyYAMLComments(doc, src)).not.toThrow();
+        });
+
+        it("should copy inline comments on matching keys", () => {
+
+            const srcText = "key: value # inline comment\n";
+            const docText = "key: value\n";
+            const src = yaml.parseDocument(srcText);
+            const doc = yaml.parseDocument(docText);
+            copyYAMLComments(doc, src);
+            const output = doc.toString();
+            expect(output).toContain("# inline comment");
         });
     });
 
