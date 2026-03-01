@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { JWTDecoded } from "../util-server";
 import childProcessAsync from "promisify-child-process";
 import { log } from "../log";
+import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
 
 const CONTAINER_NAME_REGEX = /^[a-z0-9_.-]+$/;
 
@@ -62,7 +63,7 @@ export class LxcApiRouter extends Router {
             next();
         };
 
-        router.use("/api/lxc", auth, lxcCheck);
+        router.use("/api/lxc", rateLimitMiddleware(apiRateLimiter), auth, lxcCheck);
 
         // GET /api/lxc/ - List all containers
         router.get("/api/lxc/", async (_req: Request, res: Response) => {
