@@ -20,36 +20,36 @@ describe("Stack", () => {
         it("should accept valid stack names", () => {
             const valid = [ "my-stack", "web_app", "stack1", "a-b-c", "test123" ];
             for (const name of valid) {
-                const stack = new Stack(mockServer, name, "version: '3'\n", "", true);
+                const stack = new Stack(mockServer, name, "services:\n  web:\n    image: nginx\n", "", true);
                 expect(() => stack.validate(), `expected "${name}" to be valid`).not.toThrow();
             }
         });
 
         it("should reject uppercase stack names", () => {
-            const stack = new Stack(mockServer, "MyStack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "MyStack", "services:\n  web:\n    image: nginx\n", "", true);
             expect(() => stack.validate()).toThrow(ValidationError);
         });
 
         it("should reject stack names with dots", () => {
-            const stack = new Stack(mockServer, "my.stack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "my.stack", "services:\n  web:\n    image: nginx\n", "", true);
             expect(() => stack.validate()).toThrow(ValidationError);
         });
 
         it("should reject stack names with spaces", () => {
-            const stack = new Stack(mockServer, "my stack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "my stack", "services:\n  web:\n    image: nginx\n", "", true);
             expect(() => stack.validate()).toThrow(ValidationError);
         });
 
         it("should reject stack names with special characters", () => {
             const malicious = [ "test;rm", "$(cmd)", "test`id`", "a/b", "a\\b" ];
             for (const name of malicious) {
-                const stack = new Stack(mockServer, name, "version: '3'\n", "", true);
+                const stack = new Stack(mockServer, name, "services:\n  web:\n    image: nginx\n", "", true);
                 expect(() => stack.validate(), `expected "${name}" to be rejected`).toThrow(ValidationError);
             }
         });
 
         it("should reject empty stack name", () => {
-            const stack = new Stack(mockServer, "", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "", "services:\n  web:\n    image: nginx\n", "", true);
             expect(() => stack.validate()).toThrow(ValidationError);
         });
 
@@ -64,30 +64,62 @@ describe("Stack", () => {
             expect(() => stack.validate()).not.toThrow();
         });
 
+        it("should reject YAML without services key", () => {
+            const yaml = "version: '3'\nnetworks:\n  default:\n";
+            const stack = new Stack(mockServer, "valid-name", yaml, "", true);
+            expect(() => stack.validate()).toThrow(ValidationError);
+            expect(() => stack.validate()).toThrow("Compose file must contain a 'services' key");
+        });
+
+        it("should reject YAML with services: null", () => {
+            const yaml = "services: null\n";
+            const stack = new Stack(mockServer, "valid-name", yaml, "", true);
+            expect(() => stack.validate()).toThrow(ValidationError);
+        });
+
+        it("should reject YAML with services as string", () => {
+            const yaml = "services: not-an-object\n";
+            const stack = new Stack(mockServer, "valid-name", yaml, "", true);
+            expect(() => stack.validate()).toThrow(ValidationError);
+        });
+
+        it("should reject service definition that is not an object", () => {
+            const yaml = "services:\n  web: not-an-object\n";
+            const stack = new Stack(mockServer, "valid-name", yaml, "", true);
+            expect(() => stack.validate()).toThrow(ValidationError);
+            expect(() => stack.validate()).toThrow("Service 'web' must be an object");
+        });
+
+        it("should accept valid compose structure with multiple services", () => {
+            const yaml = "services:\n  web:\n    image: nginx\n  db:\n    image: postgres\n";
+            const stack = new Stack(mockServer, "valid-name", yaml, "", true);
+            expect(() => stack.validate()).not.toThrow();
+        });
+
         it("should accept empty .env", () => {
-            const stack = new Stack(mockServer, "valid-name", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "valid-name", "services:\n  web:\n    image: nginx\n", "", true);
             expect(() => stack.validate()).not.toThrow();
         });
 
         it("should reject single-line .env without equals sign", () => {
-            const stack = new Stack(mockServer, "valid-name", "version: '3'\n", "INVALID_LINE", true);
+            const stack = new Stack(mockServer, "valid-name", "services:\n  web:\n    image: nginx\n", "INVALID_LINE", true);
             expect(() => stack.validate()).toThrow(ValidationError);
         });
 
         it("should accept valid .env with equals sign", () => {
-            const stack = new Stack(mockServer, "valid-name", "version: '3'\n", "KEY=value", true);
+            const stack = new Stack(mockServer, "valid-name", "services:\n  web:\n    image: nginx\n", "KEY=value", true);
             expect(() => stack.validate()).not.toThrow();
         });
 
         it("should accept multi-line .env even without equals on some lines", () => {
-            const stack = new Stack(mockServer, "valid-name", "version: '3'\n", "KEY=value\nCOMMENT", true);
+            const stack = new Stack(mockServer, "valid-name", "services:\n  web:\n    image: nginx\n", "KEY=value\nCOMMENT", true);
             expect(() => stack.validate()).not.toThrow();
         });
     });
 
     describe("toSimpleJSON", () => {
         it("should return correct structure", () => {
-            const stack = new Stack(mockServer, "test-stack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "test-stack", "services:\n  web:\n    image: nginx\n", "", true);
             const json = stack.toSimpleJSON("ep1") as Record<string, unknown>;
             expect(json.name).toBe("test-stack");
             expect(json.endpoint).toBe("ep1");
@@ -96,7 +128,7 @@ describe("Stack", () => {
         });
 
         it("should reflect non-default composeFileName", () => {
-            const stack = new Stack(mockServer, "test-stack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "test-stack", "services:\n  web:\n    image: nginx\n", "", true);
             // Force non-default compose file name
             (stack as unknown as Record<string, string>)["_composeFileName"] = "docker-compose.yml";
             const json = stack.toSimpleJSON("ep1") as Record<string, unknown>;
@@ -104,14 +136,14 @@ describe("Stack", () => {
         });
 
         it("should reflect current status", () => {
-            const stack = new Stack(mockServer, "running-stack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "running-stack", "services:\n  web:\n    image: nginx\n", "", true);
             (stack as unknown as Record<string, number>)["_status"] = RUNNING;
             const json = stack.toSimpleJSON("") as Record<string, unknown>;
             expect(json.status).toBe(RUNNING);
         });
 
         it("should default status to UNKNOWN", () => {
-            const stack = new Stack(mockServer, "new-stack", "version: '3'\n", "", true);
+            const stack = new Stack(mockServer, "new-stack", "services:\n  web:\n    image: nginx\n", "", true);
             const json = stack.toSimpleJSON("") as Record<string, unknown>;
             expect(json.status).toBe(UNKNOWN);
         });
