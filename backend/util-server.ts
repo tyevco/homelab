@@ -132,9 +132,10 @@ export function createApiAuthMiddleware(jwtSecret : string) {
             }
 
             // Fallback: check API tokens
-            const activeTokens = await R.find("api_token", " active = 1 ") as ApiToken[];
+            const activeTokens = (await R.find("api_token", " active ") || []) as ApiToken[];
+            log.debug("api-auth", `Found ${activeTokens.length} active API token(s)`);
             for (const apiToken of activeTokens) {
-                if (verifyPassword(token, apiToken.token_hash)) {
+                if (typeof apiToken.token_hash === "string" && verifyPassword(token, apiToken.token_hash)) {
                     const user = await R.findOne("user", " id = ? AND active = 1 ", [ apiToken.user_id ]);
                     if (user) {
                         next();
