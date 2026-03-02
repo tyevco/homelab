@@ -35,7 +35,7 @@ export class ManageApiTokenSocketHandler extends SocketHandler {
                 bean.name = data.name.trim();
                 bean.token_hash = tokenHash;
                 bean.token_prefix = tokenPrefix;
-                bean.active = true;
+                bean.active = 1;
                 await R.store(bean);
 
                 callbackResult({

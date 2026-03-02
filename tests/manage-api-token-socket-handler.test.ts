@@ -135,7 +135,7 @@ describe("ManageApiTokenSocketHandler", () => {
             expect(R.dispense).toHaveBeenCalledWith("api_token");
             expect(mockBean.user_id).toBe(1);
             expect(mockBean.name).toBe("My Token");
-            expect(mockBean.active).toBe(true);
+            expect(mockBean.active).toBe(1);
             expect(mockBean.token_hash).toMatch(/^hashed_hlk_/);
             expect(mockBean.token_prefix).toMatch(/^hlk_/);
             expect(mockBean.token_prefix).toHaveLength(10);
