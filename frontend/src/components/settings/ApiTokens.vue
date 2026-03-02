@@ -2,21 +2,22 @@
     <div class="my-4">
         <!-- Create Token -->
         <h5 class="my-4 settings-subheading">{{ $t("createApiToken") }}</h5>
-        <form class="mb-4" @submit.prevent="createToken">
-            <div class="d-flex align-items-end gap-2">
-                <div class="flex-grow-1">
-                    <label for="api-token-name" class="form-label">
-                        {{ $t("apiTokenName") }}
-                    </label>
-                    <input
-                        id="api-token-name"
-                        v-model="newTokenName"
-                        type="text"
-                        class="form-control"
-                        required
-                        maxlength="255"
-                    />
-                </div>
+        <form class="mb-3" @submit.prevent="createToken">
+            <div class="mb-3">
+                <label for="api-token-name" class="form-label">
+                    {{ $t("apiTokenName") }}
+                </label>
+                <input
+                    id="api-token-name"
+                    v-model="newTokenName"
+                    type="text"
+                    class="form-control"
+                    required
+                    maxlength="255"
+                />
+            </div>
+
+            <div>
                 <button class="btn btn-primary" type="submit" :disabled="creating">
                     {{ $t("createApiToken") }}
                 </button>
@@ -45,28 +46,21 @@
         <div v-if="tokenList.length === 0" class="text-muted">
             {{ $t("noApiTokens") }}
         </div>
-        <table v-else class="table">
-            <thead>
-                <tr>
-                    <th>{{ $t("apiTokenName") }}</th>
-                    <th>{{ $t("apiTokenPrefix") }}</th>
-                    <th>{{ $t("apiTokenCreatedAt") }}</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="token in tokenList" :key="token.id">
-                    <td>{{ token.name }}</td>
-                    <td><code>{{ token.tokenPrefix }}...</code></td>
-                    <td>{{ formatDate(token.createdAt) }}</td>
-                    <td>
-                        <button class="btn btn-outline-danger btn-sm" @click="confirmRevoke(token)">
-                            {{ $t("revokeApiToken") }}
-                        </button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div v-else class="token-list">
+            <div v-for="token in tokenList" :key="token.id" class="token-item mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold">{{ token.name }}</span>
+                        <br />
+                        <code>{{ token.tokenPrefix }}...</code>
+                        <span class="text-muted ms-2">{{ formatDate(token.createdAt) }}</span>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" @click="confirmRevoke(token)">
+                        {{ $t("revokeApiToken") }}
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <Confirm
             ref="confirmRevokeDialog"
@@ -128,7 +122,11 @@ export default {
 
         copyToken() {
             this.$refs.tokenInput.select();
-            navigator.clipboard.writeText(this.createdToken);
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(this.createdToken);
+            } else {
+                document.execCommand("copy");
+            }
         },
 
         confirmRevoke(token) {
@@ -155,3 +153,15 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.token-item {
+    padding: 10px 15px;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 6px;
+}
+
+.dark-theme .token-item {
+    border-color: #1d2634;
+}
+</style>
