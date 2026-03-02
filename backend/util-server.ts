@@ -9,7 +9,7 @@ import fs from "fs";
 import { AgentManager } from "./agent-manager";
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { ApiToken } from "./models/api-token";
+import { ApiToken } from "./models/api_token";
 
 export interface JWTDecoded {
     username : string;

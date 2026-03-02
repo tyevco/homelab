@@ -8,7 +8,7 @@ vi.mock("redbean-node/dist/bean-model", () => ({
     },
 }));
 
-import { ApiToken } from "../backend/models/api-token";
+import { ApiToken } from "../backend/models/api_token";
 
 describe("ApiToken", () => {
 
