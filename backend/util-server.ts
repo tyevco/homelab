@@ -113,37 +113,48 @@ export function createApiAuthMiddleware(jwtSecret : string) {
         try {
             const authHeader = req.headers["authorization"];
             if (!authHeader || !authHeader.startsWith("Bearer ")) {
+                log.warn("api-auth", `${req.method} ${req.originalUrl} - Missing or invalid Authorization header`);
                 res.status(401).json({ message: "Missing or invalid Authorization header" });
                 return;
             }
 
             const token = authHeader.slice(7);
+            const tokenPreview = token.substring(0, 10);
 
             // Try JWT first
             try {
                 const decoded = jwt.verify(token, jwtSecret) as JWTDecoded;
                 const user = await R.findOne("user", " username = ? AND active = 1 ", [ decoded.username ]);
                 if (user) {
+                    log.info("api-auth", `${req.method} ${req.originalUrl} - Authenticated via JWT (user: ${decoded.username})`);
                     next();
                     return;
                 }
+                log.warn("api-auth", `${req.method} ${req.originalUrl} - JWT valid but user not found: ${decoded.username}`);
             } catch {
-                // JWT failed, fall through to API token check
+                log.debug("api-auth", `${req.method} ${req.originalUrl} - JWT verification failed for token ${tokenPreview}..., trying API token`);
             }
 
             // Fallback: check API tokens
             const activeTokens = (await R.find("api_token", " active ") || []) as ApiToken[];
             log.debug("api-auth", `Found ${activeTokens.length} active API token(s)`);
             for (const apiToken of activeTokens) {
-                if (typeof apiToken.token_hash === "string" && verifyPassword(token, apiToken.token_hash)) {
+                if (typeof apiToken.token_hash !== "string") {
+                    log.warn("api-auth", `API token id=${apiToken.id} has invalid token_hash type: ${typeof apiToken.token_hash}`);
+                    continue;
+                }
+                if (verifyPassword(token, apiToken.token_hash)) {
                     const user = await R.findOne("user", " id = ? AND active = 1 ", [ apiToken.user_id ]);
                     if (user) {
+                        log.info("api-auth", `${req.method} ${req.originalUrl} - Authenticated via API token (prefix: ${apiToken.token_prefix}, user_id: ${apiToken.user_id})`);
                         next();
                         return;
                     }
+                    log.warn("api-auth", `API token matched (prefix: ${apiToken.token_prefix}) but owning user_id=${apiToken.user_id} not found or inactive`);
                 }
             }
 
+            log.warn("api-auth", `${req.method} ${req.originalUrl} - Authentication failed for token ${tokenPreview}... (checked ${activeTokens.length} API token(s))`);
             res.status(401).json({ message: "Invalid or expired token" });
         } catch (e) {
             log.error("api-auth", e);
