@@ -5,7 +5,7 @@ import { callbackError, callbackResult, checkLogin, HomelabSocket } from "../uti
 import { R } from "redbean-node";
 import { genSecret } from "../../common/util-common";
 import { generatePasswordHash } from "../password-hash";
-import { ApiToken } from "../models/api-token";
+import { ApiToken } from "../models/api_token";
 
 export class ManageApiTokenSocketHandler extends SocketHandler {
 
