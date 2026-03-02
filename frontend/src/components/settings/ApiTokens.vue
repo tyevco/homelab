@@ -128,7 +128,11 @@ export default {
 
         copyToken() {
             this.$refs.tokenInput.select();
-            navigator.clipboard.writeText(this.createdToken);
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(this.createdToken);
+            } else {
+                document.execCommand("copy");
+            }
         },
 
         confirmRevoke(token) {
