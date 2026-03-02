@@ -83,6 +83,9 @@ export default {
                 security: {
                     title: this.$t("Security"),
                 },
+                apiTokens: {
+                    title: this.$t("apiTokens"),
+                },
                 globalEnv: {
                     title: this.$t("GlobalEnv"),
                 },
