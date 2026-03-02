@@ -156,5 +156,16 @@
     "Created": "Created",
     "Destroyed": "Destroyed",
     "Frozen": "Frozen",
-    "Unfrozen": "Unfrozen"
+    "Unfrozen": "Unfrozen",
+    "apiTokens": "API Tokens",
+    "apiTokenName": "Token Name",
+    "createApiToken": "Create Token",
+    "apiTokenCreated": "API token created successfully.",
+    "apiTokenRevoked": "API token revoked successfully.",
+    "revokeApiToken": "Revoke",
+    "revokeApiTokenMsg": "Are you sure you want to revoke this API token? Any integrations using it will stop working.",
+    "apiTokenPrefix": "Prefix",
+    "apiTokenCreatedAt": "Created",
+    "apiTokenCopyMsg": "Copy this token now. It will not be shown again.",
+    "noApiTokens": "No API tokens created yet."
 }

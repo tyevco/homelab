@@ -7,6 +7,9 @@ import { R } from "redbean-node";
 import { verifyPassword } from "./password-hash";
 import fs from "fs";
 import { AgentManager } from "./agent-manager";
+import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
+import { ApiToken } from "./models/api-token";
 
 export interface JWTDecoded {
     username : string;
@@ -103,4 +106,47 @@ export function fileExists(file : string) {
     return fs.promises.access(file, fs.constants.F_OK)
         .then(() => true)
         .catch(() => false);
+}
+
+export function createApiAuthMiddleware(jwtSecret : string) {
+    return async (req : Request, res : Response, next : NextFunction) => {
+        try {
+            const authHeader = req.headers["authorization"];
+            if (!authHeader || !authHeader.startsWith("Bearer ")) {
+                res.status(401).json({ message: "Missing or invalid Authorization header" });
+                return;
+            }
+
+            const token = authHeader.slice(7);
+
+            // Try JWT first
+            try {
+                const decoded = jwt.verify(token, jwtSecret) as JWTDecoded;
+                const user = await R.findOne("user", " username = ? AND active = 1 ", [ decoded.username ]);
+                if (user) {
+                    next();
+                    return;
+                }
+            } catch {
+                // JWT failed, fall through to API token check
+            }
+
+            // Fallback: check API tokens
+            const activeTokens = await R.find("api_token", " active = 1 ") as ApiToken[];
+            for (const apiToken of activeTokens) {
+                if (verifyPassword(token, apiToken.token_hash)) {
+                    const user = await R.findOne("user", " id = ? AND active = 1 ", [ apiToken.user_id ]);
+                    if (user) {
+                        next();
+                        return;
+                    }
+                }
+            }
+
+            res.status(401).json({ message: "Invalid or expired token" });
+        } catch (e) {
+            log.error("api-auth", e);
+            res.status(401).json({ message: "Authentication failed" });
+        }
+    };
 }

@@ -42,6 +42,7 @@ import { AgentProxySocketHandler } from "./socket-handlers/agent-proxy-socket-ha
 import { AgentSocketHandler } from "./agent-socket-handler";
 import { AgentSocket } from "../common/agent-socket";
 import { ManageAgentSocketHandler } from "./socket-handlers/manage-agent-socket-handler";
+import { ManageApiTokenSocketHandler } from "./socket-handlers/manage-api-token-socket-handler";
 import { Terminal } from "./terminal";
 
 export class HomelabServer {
@@ -67,6 +68,7 @@ export class HomelabServer {
     socketHandlerList : SocketHandler[] = [
         new MainSocketHandler(),
         new ManageAgentSocketHandler(),
+        new ManageApiTokenSocketHandler(),
     ];
 
     agentProxySocketHandler = new AgentProxySocketHandler();

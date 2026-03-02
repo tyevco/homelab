@@ -1,11 +1,9 @@
 import { HomelabServer } from "../homelab-server";
 import { Router } from "../router";
-import express, { Express, NextFunction, Request, Response, Router as ExpressRouter } from "express";
+import express, { Express, Request, Response, Router as ExpressRouter } from "express";
 import { Stack } from "../stack";
 import { RUNNING, EXITED, CREATED_FILE, CREATED_STACK } from "../../common/util-common";
-import { R } from "redbean-node";
-import jwt from "jsonwebtoken";
-import { JWTDecoded, ValidationError } from "../util-server";
+import { ValidationError, createApiAuthMiddleware } from "../util-server";
 import childProcessAsync from "promisify-child-process";
 import { log } from "../log";
 import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
@@ -108,37 +106,7 @@ export class StackApiRouter extends Router {
     create(app: Express, server: HomelabServer): ExpressRouter {
         const router = express.Router();
 
-        // Auth middleware
-        const auth = async (req: Request, res: Response, next: NextFunction) => {
-            try {
-                const authHeader = req.headers["authorization"];
-                if (!authHeader || !authHeader.startsWith("Bearer ")) {
-                    res.status(401).json({ message: "Missing or invalid Authorization header" });
-                    return;
-                }
-
-                const token = authHeader.slice(7);
-                let decoded: JWTDecoded;
-
-                try {
-                    decoded = jwt.verify(token, server.jwtSecret) as JWTDecoded;
-                } catch {
-                    res.status(401).json({ message: "Invalid or expired token" });
-                    return;
-                }
-
-                const user = await R.findOne("user", " username = ? AND active = 1 ", [ decoded.username ]);
-                if (!user) {
-                    res.status(401).json({ message: "User not found or inactive" });
-                    return;
-                }
-
-                next();
-            } catch (e) {
-                log.error("stack-api", e);
-                res.status(401).json({ message: "Authentication failed" });
-            }
-        };
+        const auth = createApiAuthMiddleware(server.jwtSecret);
 
         router.use("/api/stacks", rateLimitMiddleware(apiRateLimiter), auth);
 
