@@ -167,5 +167,21 @@
     "apiTokenPrefix": "Prefix",
     "apiTokenCreatedAt": "Created",
     "apiTokenCopyMsg": "Copy this token now. It will not be shown again.",
-    "noApiTokens": "No API tokens created yet."
+    "noApiTokens": "No API tokens created yet.",
+    "or": "or",
+    "oidcSignIn": "Sign in with SSO",
+    "oidcLoginFailed": "SSO login failed",
+    "oidcSsoSettings": "OIDC Single Sign-On (SSO)",
+    "oidcSsoDescription": "Configure an OpenID Connect identity provider (e.g., Keycloak, Authentik, Google) to allow users to sign in with SSO.",
+    "oidcEnable": "Enable OIDC SSO",
+    "oidcIssuerUrl": "Issuer URL",
+    "oidcIssuerUrlHint": "The base URL of your OIDC provider (e.g., https://keycloak.example.com/realms/myrealm)",
+    "oidcClientId": "Client ID",
+    "oidcClientSecret": "Client Secret",
+    "oidcScopes": "Scopes",
+    "oidcScopesHint": "Space-separated list of scopes. Default: openid profile email",
+    "oidcUsernameClaim": "Username Claim",
+    "oidcUsernameClaimHint": "The ID token claim used as the username. Default: preferred_username",
+    "oidcAutoCreateUsers": "Auto-create users",
+    "oidcAutoCreateUsersHint": "Automatically create a new user account when someone signs in via SSO for the first time."
 }
