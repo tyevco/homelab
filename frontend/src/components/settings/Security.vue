@@ -80,6 +80,118 @@
                 </div>
             </div>
 
+            <!-- OIDC SSO Configuration -->
+            <div class="my-4">
+                <h5 class="my-4 settings-subheading">{{ $t("oidcSsoSettings") }}</h5>
+                <p class="text-muted small">{{ $t("oidcSsoDescription") }}</p>
+
+                <form @submit.prevent="saveOidcSettings">
+                    <div class="mb-3 form-check form-switch">
+                        <input
+                            id="oidc-enabled"
+                            v-model="oidcSettings.oidcEnabled"
+                            type="checkbox"
+                            class="form-check-input"
+                        />
+                        <label for="oidc-enabled" class="form-check-label">
+                            {{ $t("oidcEnable") }}
+                        </label>
+                    </div>
+
+                    <div v-if="oidcSettings.oidcEnabled">
+                        <div class="mb-3">
+                            <label for="oidc-issuer-url" class="form-label">
+                                {{ $t("oidcIssuerUrl") }}
+                            </label>
+                            <input
+                                id="oidc-issuer-url"
+                                v-model="oidcSettings.oidcIssuerUrl"
+                                type="url"
+                                class="form-control"
+                                placeholder="https://idp.example.com/realms/myrealm"
+                                required
+                            />
+                            <div class="form-text">{{ $t("oidcIssuerUrlHint") }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="oidc-client-id" class="form-label">
+                                {{ $t("oidcClientId") }}
+                            </label>
+                            <input
+                                id="oidc-client-id"
+                                v-model="oidcSettings.oidcClientId"
+                                type="text"
+                                class="form-control"
+                                placeholder="homelab"
+                                required
+                            />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="oidc-client-secret" class="form-label">
+                                {{ $t("oidcClientSecret") }}
+                            </label>
+                            <input
+                                id="oidc-client-secret"
+                                v-model="oidcSettings.oidcClientSecret"
+                                type="password"
+                                class="form-control"
+                                :placeholder="oidcSettings.oidcClientSecret === '********' ? '********' : ''"
+                                required
+                            />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="oidc-scopes" class="form-label">
+                                {{ $t("oidcScopes") }}
+                            </label>
+                            <input
+                                id="oidc-scopes"
+                                v-model="oidcSettings.oidcScopes"
+                                type="text"
+                                class="form-control"
+                                placeholder="openid profile email"
+                            />
+                            <div class="form-text">{{ $t("oidcScopesHint") }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="oidc-username-claim" class="form-label">
+                                {{ $t("oidcUsernameClaim") }}
+                            </label>
+                            <input
+                                id="oidc-username-claim"
+                                v-model="oidcSettings.oidcUsernameClaim"
+                                type="text"
+                                class="form-control"
+                                placeholder="preferred_username"
+                            />
+                            <div class="form-text">{{ $t("oidcUsernameClaimHint") }}</div>
+                        </div>
+
+                        <div class="mb-3 form-check form-switch">
+                            <input
+                                id="oidc-auto-create"
+                                v-model="oidcSettings.oidcAutoCreateUsers"
+                                type="checkbox"
+                                class="form-check-input"
+                            />
+                            <label for="oidc-auto-create" class="form-check-label">
+                                {{ $t("oidcAutoCreateUsers") }}
+                            </label>
+                            <div class="form-text">{{ $t("oidcAutoCreateUsersHint") }}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button class="btn btn-primary" type="submit">
+                            {{ $t("Save") }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <div class="my-4">
                 <!-- Advanced -->
                 <h5 class="my-4 settings-subheading">{{ $t("Advanced") }}</h5>
@@ -133,7 +245,16 @@ export default {
                 currentPassword: "",
                 newPassword: "",
                 repeatNewPassword: "",
-            }
+            },
+            oidcSettings: {
+                oidcEnabled: false,
+                oidcIssuerUrl: "",
+                oidcClientId: "",
+                oidcClientSecret: "",
+                oidcScopes: "openid profile email",
+                oidcUsernameClaim: "preferred_username",
+                oidcAutoCreateUsers: true,
+            },
         };
     },
 
@@ -155,7 +276,42 @@ export default {
         },
     },
 
+    mounted() {
+        this.loadOidcSettings();
+    },
+
     methods: {
+        /** Load OIDC settings from server */
+        loadOidcSettings() {
+            this.$root
+                .getSocket()
+                .emit("getOidcSettings", (res) => {
+                    if (res.ok && res.data) {
+                        this.oidcSettings = {
+                            oidcEnabled: res.data.oidcEnabled || false,
+                            oidcIssuerUrl: res.data.oidcIssuerUrl || "",
+                            oidcClientId: res.data.oidcClientId || "",
+                            oidcClientSecret: res.data.oidcClientSecret || "",
+                            oidcScopes: res.data.oidcScopes || "openid profile email",
+                            oidcUsernameClaim: res.data.oidcUsernameClaim || "preferred_username",
+                            oidcAutoCreateUsers: res.data.oidcAutoCreateUsers !== undefined ? res.data.oidcAutoCreateUsers : true,
+                        };
+                    }
+                });
+        },
+
+        /** Save OIDC settings to server */
+        saveOidcSettings() {
+            this.$root
+                .getSocket()
+                .emit("saveOidcSettings", this.oidcSettings, (res) => {
+                    this.$root.toastRes(res);
+                    if (res.ok) {
+                        this.loadOidcSettings();
+                    }
+                });
+        },
+
         /** Check new passwords match before saving them */
         savePassword() {
             if (this.password.newPassword !== this.password.repeatNewPassword) {

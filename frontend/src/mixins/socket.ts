@@ -200,6 +200,22 @@ export default defineComponent({
                 this.socketIO.connectCount++;
                 this.socketIO.connected = true;
                 this.socketIO.showReverseProxyGuide = false;
+
+                // Check for OIDC token in URL (from SSO callback redirect)
+                const urlParams = new URLSearchParams(window.location.search);
+                const oidcToken = urlParams.get("oidcToken");
+
+                if (oidcToken) {
+                    console.log("Logging in with OIDC token");
+                    this.storage().token = oidcToken;
+                    this.socketIO.token = oidcToken;
+                    // Clean up URL
+                    window.history.replaceState({}, "", window.location.pathname);
+                    this.loginByToken(oidcToken);
+                    this.socketIO.firstConnect = false;
+                    return;
+                }
+
                 const token = this.storage().token;
 
                 if (token) {

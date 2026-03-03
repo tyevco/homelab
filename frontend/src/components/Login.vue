@@ -34,8 +34,19 @@
                     {{ $t("Login") }}
                 </button>
 
+                <div v-if="$root.info && $root.info.oidcEnabled" class="mt-3">
+                    <div class="divider-text">{{ $t("or") }}</div>
+                    <a href="/auth/oidc/login" class="w-100 btn btn-outline-primary mt-2">
+                        {{ $t("oidcSignIn") }}
+                    </a>
+                </div>
+
                 <div v-if="res && !res.ok" class="alert alert-danger mt-3" role="alert">
                     {{ $t(res.msg) }}
+                </div>
+
+                <div v-if="oidcError" class="alert alert-danger mt-3" role="alert">
+                    {{ $t("oidcLoginFailed") }}: {{ oidcError }}
                 </div>
             </form>
         </div>
@@ -52,11 +63,21 @@ export default {
             token: "",
             res: null,
             tokenRequired: false,
+            oidcError: null,
         };
     },
 
     mounted() {
         document.title += " - Login";
+
+        // Check for OIDC error in URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const oidcError = urlParams.get("oidcError");
+        if (oidcError) {
+            this.oidcError = decodeURIComponent(oidcError);
+            // Clean up URL
+            window.history.replaceState({}, "", window.location.pathname);
+        }
     },
 
     unmounted() {
@@ -110,5 +131,27 @@ export default {
     padding: 15px;
     margin: auto;
     text-align: center;
+}
+
+.divider-text {
+    display: flex;
+    align-items: center;
+    color: #6c757d;
+    font-size: 0.875rem;
+
+    &::before,
+    &::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    &::before {
+        margin-right: 0.5rem;
+    }
+
+    &::after {
+        margin-left: 0.5rem;
+    }
 }
 </style>

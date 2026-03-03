@@ -18,6 +18,7 @@ import {
 import { passwordStrength } from "check-password-strength";
 import jwt from "jsonwebtoken";
 import { Settings } from "../settings";
+import { clearDiscoveryCache } from "../routers/oidc-router";
 import fs, { promises as fsAsync } from "fs";
 import path from "path";
 
@@ -295,6 +296,62 @@ export class MainSocketHandler extends SocketHandler {
                 if (e instanceof Error) {
                     log.warn("disconnectOtherSocketClients", e.message);
                 }
+            }
+        });
+
+        // Get OIDC settings
+        socket.on("getOidcSettings", async (callback) => {
+            try {
+                checkLogin(socket);
+                const data = await Settings.getSettings("oidc");
+
+                // Mask the client secret for display
+                if (data.oidcClientSecret) {
+                    data.oidcClientSecret = "********";
+                }
+
+                callback({
+                    ok: true,
+                    data: data,
+                });
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Save OIDC settings
+        socket.on("saveOidcSettings", async (data, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof data !== "object" || data === null) {
+                    throw new ValidationError("Invalid OIDC settings data");
+                }
+
+                // If client secret is masked, don't overwrite the stored value
+                if (data.oidcClientSecret === "********") {
+                    const existingSecret = await Settings.get("oidcClientSecret");
+                    if (existingSecret) {
+                        data.oidcClientSecret = existingSecret;
+                    } else {
+                        delete data.oidcClientSecret;
+                    }
+                }
+
+                await Settings.setSettings("oidc", data);
+
+                // Clear OIDC discovery cache when settings change
+                clearDiscoveryCache();
+
+                // Update the info sent to all clients (oidcEnabled may have changed)
+                await server.sendInfo(socket);
+
+                callback({
+                    ok: true,
+                    msg: "Saved",
+                });
+            } catch (e) {
+                callbackError(e, callback);
             }
         });
 
