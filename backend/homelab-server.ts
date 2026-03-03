@@ -3,7 +3,6 @@ import { MainRouter } from "./routers/main-router";
 import { LxcApiRouter } from "./routers/lxc-api-router";
 import { StackApiRouter } from "./routers/stack-api-router";
 import { OidcRouter } from "./routers/oidc-router";
-import { OidcRouter } from "./routers/oidc-router";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
