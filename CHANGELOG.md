@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/tyevco/homelab/compare/homelab-v1.7.0...homelab-v1.8.0) (2026-03-06)
+
+
+### Features
+
+* adopt release-please for unified release workflow ([250a2ae](https://github.com/tyevco/homelab/commit/250a2ae4a07c722f209e1a5ee16194a4141bc3f0))
+
+
+### Bug Fixes
+
+* exclude CHANGELOG.md from rebrand scan ([8730e85](https://github.com/tyevco/homelab/commit/8730e85c23bb1ba66424536ed1e1a85c51bdf9e7))
+
 ## [1.7.0](https://github.com/tyevco/homelab/compare/homelab-v1.6.0...homelab-v1.7.0) (2026-03-06)
 
 
