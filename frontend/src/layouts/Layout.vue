@@ -33,7 +33,7 @@
                     </router-link>
                 </li>
 
-                <li v-if="$root.loggedIn && $root.info && $root.info.lxcAvailable" class="nav-item me-2">
+                <li v-if="$root.loggedIn && anyLxcAvailable" class="nav-item me-2">
                     <router-link to="/lxc" class="nav-link">
                         <font-awesome-icon icon="server" /> {{ $tc("lxcContainer", 2) }}
                     </router-link>
@@ -119,6 +119,15 @@ export default {
     },
 
     computed: {
+
+        anyLxcAvailable() {
+            if (this.$root.info && this.$root.info.lxcAvailable) {
+                return true;
+            }
+            return Object.values(this.$root.agentList ?? {}).some(
+                (agent) => agent.capabilities && agent.capabilities.lxcAvailable
+            );
+        },
 
         // Theme or Mobile
         classes() {
