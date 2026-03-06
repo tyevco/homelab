@@ -18,6 +18,7 @@ export class AgentManager {
     protected encryptionKey : string;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
+    protected agentCapabilities : Record<string, Record<string, boolean>> = {};
     protected _firstConnectTime : Dayjs = dayjs();
 
     constructor(socket: HomelabSocket, encryptionKey : string = "") {
@@ -185,6 +186,10 @@ export class AgentManager {
         client.on("info", (res) => {
             log.debug("agent-manager", res);
 
+            this.agentCapabilities[endpoint] = {
+                lxcAvailable: !!res.lxcAvailable,
+            };
+
             // Disconnect if the version is lower than 1.4.0
             if (!isDev && semver.satisfies(res.version, "< 1.4.0")) {
                 this.socket.emit("agentStatus", {
@@ -282,7 +287,7 @@ export class AgentManager {
         }
     }
 
-    async sendAgentList() {
+    async sendAgentList(selfCapabilities : Record<string, boolean> = {}) {
         let list = await Agent.getAgentList();
         let result : Record<string, LooseObject> = {};
 
@@ -291,11 +296,15 @@ export class AgentManager {
             url: "",
             username: "",
             endpoint: "",
+            capabilities: selfCapabilities,
         };
 
         for (let endpoint in list) {
             let agent = list[endpoint];
-            result[endpoint] = agent.toJSON();
+            result[endpoint] = {
+                ...agent.toJSON(),
+                capabilities: this.agentCapabilities[endpoint] ?? {},
+            };
         }
 
         this.socket.emit("agentList", {

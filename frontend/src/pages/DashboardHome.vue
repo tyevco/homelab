@@ -77,6 +77,9 @@
                             <span v-if="endpoint === ''">{{ $t("currentEndpoint") }}</span>
                             <a v-else :href="agent.url" target="_blank">{{ endpoint }}</a>
 
+                            <!-- Capability Pills -->
+                            <span v-if="agent.capabilities && agent.capabilities.lxcAvailable" class="badge bg-info ms-2" style="font-size: 11px;">LXC</span>
+
                             <!-- Remove Button -->
                             <font-awesome-icon v-if="endpoint !== ''" class="ms-2 remove-agent" icon="trash" @click="showRemoveAgentDialog[agent.url] = !showRemoveAgentDialog[agent.url]" />
 
