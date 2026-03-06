@@ -2,7 +2,7 @@ name: Publish LXC Agent
 
 on:
   push:
-    tags: ['lxc-agent-v*']
+    tags: ['v*']
   workflow_dispatch:
 
 jobs:
@@ -21,6 +21,15 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Patch version in lxc-agent/package.json
+        run: |
+          jq --arg v "${{ steps.version.outputs.VERSION }}" '.version = $v' lxc-agent/package.json > lxc-agent/package.json.tmp
+          mv lxc-agent/package.json.tmp lxc-agent/package.json
 
       - name: Install dependencies
         working-directory: lxc-agent

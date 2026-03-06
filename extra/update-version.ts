@@ -12,7 +12,8 @@ if (! newVersion) {
     process.exit(1);
 }
 
-const exists = tagExists(newVersion);
+const tagName = `v${newVersion}`;
+const exists = tagExists(tagName);
 
 if (! exists) {
     // Process package.json
@@ -24,7 +25,7 @@ if (! exists) {
     fs.writeFileSync("lxc-agent/package.json", JSON.stringify(lxcAgentPkg, null, 4) + "\n");
 
     commit(newVersion);
-    tag(newVersion);
+    tag(tagName);
 } else {
     console.log("version exists");
 }
@@ -55,16 +56,16 @@ function tag(version) {
 }
 
 /**
- * Check if a tag exists for the specified version
- * @param {string} version Version to check
+ * Check if a tag exists
+ * @param {string} tag Tag to check
  * @returns {boolean} Does the tag already exist
  */
-function tagExists(version) {
-    if (! version) {
-        throw new Error("invalid version");
+function tagExists(tag) {
+    if (! tag) {
+        throw new Error("invalid tag");
     }
 
-    let res = childProcess.spawnSync("git", [ "tag", "-l", version ]);
+    let res = childProcess.spawnSync("git", [ "tag", "-l", tag ]);
 
-    return res.stdout.toString().trim() === version;
+    return res.stdout.toString().trim() === tag;
 }
