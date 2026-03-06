@@ -31,7 +31,9 @@ describe("rebrand verification", () => {
                 // Exclude package-lock.json (third-party dependency names like @louislam/sqlite3)
                 .filter(f => !f.includes("package-lock.json"))
                 // Exclude the rebrand test file itself
-                .filter(f => !f.includes("rebrand.test.ts"));
+                .filter(f => !f.includes("rebrand.test.ts"))
+                // Exclude auto-generated changelog (may reference old name in historical entries)
+                .filter(f => !f.includes("CHANGELOG.md"));
         } catch {
             // grep returns exit code 1 when no matches found
             return [];
