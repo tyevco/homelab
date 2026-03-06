@@ -35,7 +35,7 @@
                     <button class="btn-normal btn mb-4" @click="convertDockerRun">{{ $t("Convert to Compose") }}</button>
 
                     <!-- LXC Section -->
-                    <div v-if="$root.info && $root.info.lxcAvailable">
+                    <div v-if="anyLxcAvailable">
                         <h2 class="mb-3">{{ $tc("lxcContainer", 2) }}</h2>
                         <div class="shadow-box big-padding text-center mb-3">
                             <div class="row">
@@ -179,6 +179,14 @@ export default {
         },
         lxcStoppedNum() {
             return this.getLxcStatusNum("exited");
+        },
+        anyLxcAvailable() {
+            if (this.$root.info && this.$root.info.lxcAvailable) {
+                return true;
+            }
+            return Object.values(this.$root.agentList ?? {}).some(
+                (agent) => agent.capabilities && agent.capabilities.lxcAvailable
+            );
         },
     },
 

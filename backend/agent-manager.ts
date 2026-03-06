@@ -20,6 +20,7 @@ export class AgentManager {
     protected agentLoggedInList : Record<string, boolean> = {};
     protected agentCapabilities : Record<string, Record<string, unknown>> = {};
     protected _firstConnectTime : Dayjs = dayjs();
+    protected selfCapabilities : Record<string, unknown> = {};
 
     constructor(socket: HomelabSocket, encryptionKey : string = "") {
         this.socket = socket;
@@ -191,6 +192,9 @@ export class AgentManager {
                 version: res.version ?? null,
             };
 
+            // Push updated capabilities to the frontend
+            this.sendAgentList(this.selfCapabilities);
+
             // Disconnect if the version is lower than 1.4.0
             if (!isDev && semver.satisfies(res.version, "< 1.4.0")) {
                 this.socket.emit("agentStatus", {
@@ -289,6 +293,7 @@ export class AgentManager {
     }
 
     async sendAgentList(selfCapabilities : Record<string, unknown> = {}) {
+        this.selfCapabilities = selfCapabilities;
         let list = await Agent.getAgentList();
         let result : Record<string, LooseObject> = {};
 
