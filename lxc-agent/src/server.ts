@@ -1,5 +1,6 @@
 import { createServer, Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
+import { spawn } from "promisify-child-process";
 import * as lxc from "./lxc";
 import { AgentTerminal } from "./terminal";
 
@@ -7,6 +8,34 @@ export interface AgentConfig {
     username: string;
     password: string;
     version: string;
+    scanInterval: number;
+}
+
+export interface Capabilities {
+    lxcAvailable: boolean;
+}
+
+async function detectCapabilities(): Promise<Capabilities> {
+    let lxcAvailable = false;
+    try {
+        await spawn("lxc-ls", [ "--version" ], { encoding: "utf8" });
+        lxcAvailable = true;
+    } catch {
+        // lxc-ls not found or failed
+    }
+
+    const found: string[] = [];
+    if (lxcAvailable) {
+        found.push("LXC");
+    }
+
+    if (found.length > 0) {
+        console.log(`[agent] Capabilities detected: ${found.join(", ")}`);
+    } else {
+        console.log("[agent] No additional capabilities detected");
+    }
+
+    return { lxcAvailable };
 }
 
 type Callback = (res: object) => void;
@@ -14,6 +43,29 @@ type Callback = (res: object) => void;
 export function createAgentServer(config: AgentConfig): { io: Server; httpServer: HttpServer } {
     const httpServer = createServer();
     const io = new Server(httpServer);
+
+    let capabilities: Capabilities = { lxcAvailable: false };
+    const authenticatedSockets = new Set<Socket>();
+
+    const emitInfo = (socket: Socket) => {
+        socket.emit("info", {
+            version: config.version,
+            ...capabilities,
+        });
+    };
+
+    const rescan = async () => {
+        console.log("[agent] Scanning capabilities...");
+        capabilities = await detectCapabilities();
+        for (const socket of authenticatedSockets) {
+            emitInfo(socket);
+        }
+    };
+
+    // Initial scan, then periodic rescan
+    rescan().then(() => {
+        setInterval(rescan, config.scanInterval * 1000);
+    });
 
     io.on("connection", (socket: Socket) => {
         // The main server sends its own endpoint string in the header so we can
@@ -23,14 +75,12 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
 
         console.log(`[agent] Main server connected (endpoint: ${endpoint || "<none>"})`);
 
-        // Announce ourselves — main server checks version >= 1.4.0
-        socket.emit("info", {
-            version: config.version,
-            lxcAvailable: true,
-        });
+        // Announce ourselves with current capabilities — main server checks version >= 1.4.0
+        emitInfo(socket);
 
         socket.on("disconnect", () => {
             console.log("[agent] Main server disconnected");
+            authenticatedSockets.delete(socket);
             // Leave interactive terminals open (lxc-attach) across reconnects;
             // only clean up non-interactive progress terminals which are already
             // gone by the time the process exits.
@@ -49,6 +99,7 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
 
             if (username === config.username && password === config.password) {
                 loggedIn = true;
+                authenticatedSockets.add(socket);
                 console.log(`[agent] Authenticated as ${username}`);
                 cb?.({ ok: true });
             } else {
