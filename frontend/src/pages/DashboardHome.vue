@@ -77,6 +77,9 @@
                             <span v-if="endpoint === ''">{{ $t("currentEndpoint") }}</span>
                             <a v-else :href="agent.url" target="_blank">{{ endpoint }}</a>
 
+                            <!-- Version -->
+                            <span v-if="agent.capabilities && agent.capabilities.version" class="text-muted ms-2" style="font-size: 11px;">v{{ agent.capabilities.version }}</span>
+
                             <!-- Capability Pills -->
                             <span v-if="agent.capabilities && agent.capabilities.lxcAvailable" class="badge bg-info ms-2" style="font-size: 11px;">LXC</span>
 

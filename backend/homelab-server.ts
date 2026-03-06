@@ -373,7 +373,8 @@ export class HomelabServer {
             }
         }
 
-        await socket.instanceManager.sendAgentList({ lxcAvailable: this.lxcAvailable });
+        await socket.instanceManager.sendAgentList({ lxcAvailable: this.lxcAvailable,
+            version: packageJSON.version });
 
         // Also connect to other homelab instances
         await socket.instanceManager.connectAll();

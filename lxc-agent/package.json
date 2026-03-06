@@ -1,6 +1,6 @@
 {
     "name": "@tyevco/homelab-lxc-agent",
-    "version": "1.4.0",
+    "version": "1.6.0",
     "description": "Lightweight LXC agent for Homelab",
     "bin": {
         "homelab-lxc-agent": "bin/homelab-lxc-agent.js"

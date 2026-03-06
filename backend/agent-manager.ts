@@ -188,6 +188,7 @@ export class AgentManager {
 
             this.agentCapabilities[endpoint] = {
                 lxcAvailable: !!res.lxcAvailable,
+                version: res.version ?? null,
             };
 
             // Disconnect if the version is lower than 1.4.0
