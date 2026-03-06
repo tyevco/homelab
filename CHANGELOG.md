@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.1](https://github.com/tyevco/homelab/compare/v1.9.0...v1.9.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* default to patch bumps and use latest git tag for lxc-agent publish ([7e09776](https://github.com/tyevco/homelab/commit/7e0977639ed93e2e09c9098859616dbcd32a0a7f))
+* default to patch bumps and use latest git tag for lxc-agent publish ([8b8cca7](https://github.com/tyevco/homelab/commit/8b8cca74b3597e98e81d0d68c604cae6b4f49caa))
+* push agent capabilities to frontend and show LXC section for remote agents ([54f2641](https://github.com/tyevco/homelab/commit/54f2641dafa5c0054442664d5ecb21cdd519adda))
+
 ## [1.9.0](https://github.com/tyevco/homelab/compare/v1.8.0...v1.9.0) (2026-03-06)
 
 
