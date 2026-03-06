@@ -18,7 +18,7 @@ export class AgentManager {
     protected encryptionKey : string;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
-    protected agentCapabilities : Record<string, Record<string, boolean>> = {};
+    protected agentCapabilities : Record<string, Record<string, unknown>> = {};
     protected _firstConnectTime : Dayjs = dayjs();
 
     constructor(socket: HomelabSocket, encryptionKey : string = "") {
@@ -288,7 +288,7 @@ export class AgentManager {
         }
     }
 
-    async sendAgentList(selfCapabilities : Record<string, boolean> = {}) {
+    async sendAgentList(selfCapabilities : Record<string, unknown> = {}) {
         let list = await Agent.getAgentList();
         let result : Record<string, LooseObject> = {};
 
