@@ -1,4 +1,5 @@
 import pkg from "../package.json";
+import lxcAgentPkg from "../lxc-agent/package.json";
 import childProcess from "child_process";
 import fs from "fs";
 
@@ -17,6 +18,11 @@ if (! exists) {
     // Process package.json
     pkg.version = newVersion;
     fs.writeFileSync("package.json", JSON.stringify(pkg, null, 4) + "\n");
+
+    // Process lxc-agent/package.json
+    lxcAgentPkg.version = newVersion;
+    fs.writeFileSync("lxc-agent/package.json", JSON.stringify(lxcAgentPkg, null, 4) + "\n");
+
     commit(newVersion);
     tag(newVersion);
 } else {
