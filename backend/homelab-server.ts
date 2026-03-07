@@ -447,6 +447,13 @@ export class HomelabServer {
                     if (this.lxcAvailable) {
                         await this.sendLxcContainerList(true);
                     }
+                    // Also poll LXC container list from all connected remote agents
+                    for (const socket of this.io.sockets.sockets.values()) {
+                        const hlSocket = socket as HomelabSocket;
+                        if (hlSocket.userID) {
+                            hlSocket.instanceManager.emitToAllEndpoints("requestLxcContainerList");
+                        }
+                    }
                 } catch (e) {
                     log.error("server", e);
                 }

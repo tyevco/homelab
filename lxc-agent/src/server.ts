@@ -45,7 +45,8 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
     const io = new Server(httpServer);
 
     let capabilities: Capabilities = { lxcAvailable: false };
-    const authenticatedSockets = new Set<Socket>();
+    // Maps socket → endpoint so rescan can push per-connection data
+    const authenticatedSockets = new Map<Socket, string>();
 
     const emitInfo = (socket: Socket) => {
         socket.emit("info", {
@@ -54,11 +55,26 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
         });
     };
 
+    const pushContainerList = async (socket: Socket, endpoint: string) => {
+        const list = await lxc.getContainerList(endpoint);
+        console.log(`[lxc] Pushing container list to main server (${Object.keys(list).length} container(s))`);
+        socket.emit("agent", "lxcContainerList", { ok: true,
+            lxcContainerList: list,
+            endpoint });
+    };
+
     const rescan = async () => {
         console.log("[agent] Scanning capabilities...");
         capabilities = await detectCapabilities();
-        for (const socket of authenticatedSockets) {
+        for (const [ socket ] of authenticatedSockets) {
             emitInfo(socket);
+        }
+        if (capabilities.lxcAvailable) {
+            for (const [ socket, endpoint ] of authenticatedSockets) {
+                pushContainerList(socket, endpoint).catch((e) =>
+                    console.error("[lxc] Failed to push container list during rescan:", e instanceof Error ? e.message : e)
+                );
+            }
         }
     };
 
@@ -99,9 +115,15 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
 
             if (username === config.username && password === config.password) {
                 loggedIn = true;
-                authenticatedSockets.add(socket);
+                authenticatedSockets.set(socket, endpoint);
                 console.log(`[agent] Authenticated as ${username}`);
                 cb?.({ ok: true });
+                // Immediately push the container list so the main server doesn't have to ask
+                if (capabilities.lxcAvailable) {
+                    pushContainerList(socket, endpoint).catch((e) =>
+                        console.error("[lxc] Failed to push initial container list:", e instanceof Error ? e.message : e)
+                    );
+                }
             } else {
                 console.warn(`[agent] Login failed for ${username}`);
                 cb?.({ ok: false,
