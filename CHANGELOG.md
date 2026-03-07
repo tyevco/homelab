@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.3](https://github.com/tyevco/homelab/compare/v1.9.2...v1.9.3) (2026-03-07)
+
+
+### Bug Fixes
+
+* automatically push LXC container list from agent and poll from server ([6ebf092](https://github.com/tyevco/homelab/commit/6ebf0923fd6b5be581e7ab5d2544c021b4d9dcff))
+* automatically push LXC container list from agent and poll from server cron ([80d52e9](https://github.com/tyevco/homelab/commit/80d52e9c07aa3f439f9a3c45b62f38d4696fc103))
+
 ## [1.9.2](https://github.com/tyevco/homelab/compare/v1.9.1...v1.9.2) (2026-03-07)
 
 
