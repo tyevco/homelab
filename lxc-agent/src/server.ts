@@ -72,6 +72,7 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
                 return;
             }
 
+            console.log(`[agent] Event: ${eventName}`);
             await dispatch(socket, endpoint, eventName, args);
         });
     });
@@ -91,9 +92,11 @@ async function dispatch(socket: Socket, endpoint: string, eventName: string, arg
             ...(msg ? { msg,
                 msgi18n: true } : {}),
             ...extra });
-    const fail = (e: unknown) =>
+    const fail = (e: unknown) => {
+        console.error(`[agent] Error handling ${eventName}:`, e instanceof Error ? e.message : String(e));
         callback?.({ ok: false,
             msg: e instanceof Error ? e.message : String(e) });
+    };
 
     const pushList = async () => {
         const list = await lxc.getContainerList(endpoint);
