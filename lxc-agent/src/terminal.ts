@@ -61,6 +61,7 @@ export class AgentTerminal {
             return;
         }
 
+        console.log(`[terminal] Starting: ${this.name} (${this.file} ${this.args.join(" ")})`);
         try {
             this._ptyProcess = pty.spawn(this.file, this.args, {
                 name: this.name,
@@ -78,6 +79,7 @@ export class AgentTerminal {
             });
 
             this._ptyProcess.onExit(({ exitCode }) => {
+                console.log(`[terminal] Exited: ${this.name} (code ${exitCode})`);
                 this.socket.emit("agent", "terminalExit", this.name, exitCode);
                 AgentTerminal.terminalMap.delete(this.name);
                 this.exitCallback?.(exitCode);
@@ -85,6 +87,7 @@ export class AgentTerminal {
         } catch (error) {
             const msg = error instanceof Error ? error.message : String(error);
             const exitCode = Number(msg.split(" ").pop()) || 1;
+            console.error(`[terminal] Failed to start: ${this.name}: ${msg}`);
             this.socket.emit("agent", "terminalExit", this.name, exitCode);
             AgentTerminal.terminalMap.delete(this.name);
             this.exitCallback?.(exitCode);

@@ -122,6 +122,7 @@ export async function getContainerList(endpoint: string): Promise<Record<string,
                 isManagedByHomelab: true,
             };
         }
+        console.log(`[lxc] Found ${Object.keys(result).length} container(s)`);
     } catch (e) {
         console.error("[lxc] Failed to get container list:", e instanceof Error ? e.message : e);
     }
@@ -133,6 +134,7 @@ export async function getContainer(name: string, endpoint: string): Promise<Cont
         throw new Error("Invalid LXC container name");
     }
 
+    console.log(`[lxc] Getting info for: ${name}`);
     const res = await spawn("lxc-info", [ "-n", name ], { encoding: "utf-8" });
     if (!res.stdout) {
         throw new Error("LXC container not found");
@@ -177,20 +179,25 @@ export async function getContainer(name: string, endpoint: string): Promise<Cont
 }
 
 export async function startContainer(socket: SocketLike, endpoint: string, name: string): Promise<void> {
+    console.log(`[lxc] Starting container: ${name}`);
     const code = await AgentTerminal.exec(socket, getLxcTerminalName(endpoint, name), "lxc-start", [ "-n", name ], LXC_PATH);
     if (code !== 0) {
         throw new Error("Failed to start LXC container");
     }
+    console.log(`[lxc] Started: ${name}`);
 }
 
 export async function stopContainer(socket: SocketLike, endpoint: string, name: string): Promise<void> {
+    console.log(`[lxc] Stopping container: ${name}`);
     const code = await AgentTerminal.exec(socket, getLxcTerminalName(endpoint, name), "lxc-stop", [ "-n", name ], LXC_PATH);
     if (code !== 0) {
         throw new Error("Failed to stop LXC container");
     }
+    console.log(`[lxc] Stopped: ${name}`);
 }
 
 export async function restartContainer(socket: SocketLike, endpoint: string, name: string): Promise<void> {
+    console.log(`[lxc] Restarting container: ${name}`);
     const termName = getLxcTerminalName(endpoint, name);
     const stopCode = await AgentTerminal.exec(socket, termName, "lxc-stop", [ "-n", name ], LXC_PATH);
     if (stopCode !== 0) {
@@ -200,39 +207,49 @@ export async function restartContainer(socket: SocketLike, endpoint: string, nam
     if (startCode !== 0) {
         throw new Error("Failed to start LXC container for restart");
     }
+    console.log(`[lxc] Restarted: ${name}`);
 }
 
 export async function freezeContainer(socket: SocketLike, endpoint: string, name: string): Promise<void> {
+    console.log(`[lxc] Freezing container: ${name}`);
     const code = await AgentTerminal.exec(socket, getLxcTerminalName(endpoint, name), "lxc-freeze", [ "-n", name ], LXC_PATH);
     if (code !== 0) {
         throw new Error("Failed to freeze LXC container");
     }
+    console.log(`[lxc] Frozen: ${name}`);
 }
 
 export async function unfreezeContainer(socket: SocketLike, endpoint: string, name: string): Promise<void> {
+    console.log(`[lxc] Unfreezing container: ${name}`);
     const code = await AgentTerminal.exec(socket, getLxcTerminalName(endpoint, name), "lxc-unfreeze", [ "-n", name ], LXC_PATH);
     if (code !== 0) {
         throw new Error("Failed to unfreeze LXC container");
     }
+    console.log(`[lxc] Unfrozen: ${name}`);
 }
 
 export async function deleteContainer(socket: SocketLike, endpoint: string, name: string, status: number): Promise<void> {
+    console.log(`[lxc] Deleting container: ${name}`);
     const termName = getLxcTerminalName(endpoint, name);
     if (status === RUNNING || status === FROZEN) {
+        console.log(`[lxc] Stopping ${name} before delete`);
         await AgentTerminal.exec(socket, termName, "lxc-stop", [ "-n", name ], LXC_PATH);
     }
     const code = await AgentTerminal.exec(socket, termName, "lxc-destroy", [ "-n", name ], LXC_PATH);
     if (code !== 0) {
         throw new Error("Failed to destroy LXC container");
     }
+    console.log(`[lxc] Deleted: ${name}`);
 }
 
 export async function saveConfig(name: string, config: string): Promise<void> {
+    console.log(`[lxc] Saving config for: ${name}`);
     const containerPath = path.join(LXC_PATH, name);
     if (!fs.existsSync(containerPath)) {
         throw new Error("LXC container not found");
     }
     await fs.promises.writeFile(path.join(containerPath, "config"), config);
+    console.log(`[lxc] Config saved for: ${name}`);
 }
 
 export async function createContainer(
@@ -256,6 +273,7 @@ export async function createContainer(
         throw new Error("Invalid architecture");
     }
 
+    console.log(`[lxc] Creating container: ${name} (${dist} ${release} ${arch})`);
     const code = await AgentTerminal.exec(
         socket,
         getLxcTerminalName(endpoint, name),
@@ -266,6 +284,7 @@ export async function createContainer(
     if (code !== 0) {
         throw new Error("Failed to create LXC container");
     }
+    console.log(`[lxc] Created: ${name}`);
 }
 
 export async function getDistributions(): Promise<object[]> {
