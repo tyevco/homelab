@@ -10,6 +10,18 @@ import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
 
 const CONTAINER_NAME_REGEX = /^[a-z0-9_.-]+$/;
 
+function callAgent<T>(server: HomelabServer, endpoint: string, event: string, ...args: unknown[]): Promise<T> {
+    return new Promise((resolve, reject) => {
+        server.serverAgentManager!.emitToEndpoint(endpoint, event, ...args, (res: { ok: boolean; msg?: string } & T) => {
+            if (res.ok) {
+                resolve(res as T);
+            } else {
+                reject(new Error(res.msg || "Agent error"));
+            }
+        }).catch(reject);
+    });
+}
+
 export class LxcApiRouter extends Router {
     create(app: Express, server: HomelabServer): ExpressRouter {
         const router = express.Router();
@@ -17,12 +29,26 @@ export class LxcApiRouter extends Router {
         const auth = createApiAuthMiddleware(server.jwtSecret);
 
         // LXC availability check middleware
-        const lxcCheck = async (_req: Request, res: Response, next: NextFunction) => {
-            const available = await LxcContainer.isLxcAvailable();
-            if (!available) {
-                res.status(503).json({ ok: false,
-                    msg: "LXC is not available on this system" });
-                return;
+        const lxcCheck = async (req: Request, res: Response, next: NextFunction) => {
+            const localOk = await LxcContainer.isLxcAvailable();
+            const endpoint = (req.query.endpoint as string) || "";
+
+            if (!localOk && endpoint) {
+                const caps = server.serverAgentManager?.agentCapabilities[endpoint];
+                if (!caps?.lxcAvailable) {
+                    res.status(503).json({ ok: false,
+                        msg: "LXC is not available on this endpoint" });
+                    return;
+                }
+            } else if (!localOk) {
+                const anyAgent = server.serverAgentManager
+                    ? Object.values(server.serverAgentManager.agentCapabilities).some(c => c.lxcAvailable)
+                    : false;
+                if (!anyAgent) {
+                    res.status(503).json({ ok: false,
+                        msg: "LXC is not available on this system" });
+                    return;
+                }
             }
             next();
         };
@@ -30,8 +56,16 @@ export class LxcApiRouter extends Router {
         router.use("/api/lxc", rateLimitMiddleware(apiRateLimiter), auth, lxcCheck);
 
         // GET /api/lxc/ - List all containers
-        router.get("/api/lxc/", async (_req: Request, res: Response) => {
+        router.get("/api/lxc/", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
+                if (endpoint) {
+                    const cached = server.serverAgentManager?.containerListCache[endpoint];
+                    const containers = cached ? Object.values(cached) : [];
+                    res.json({ ok: true,
+                        containers });
+                    return;
+                }
                 const containerList = await LxcContainer.getContainerList(server);
                 const containers: object[] = [];
                 for (const [ , container ] of containerList) {
@@ -47,8 +81,15 @@ export class LxcApiRouter extends Router {
         });
 
         // GET /api/lxc/distributions - List available OS distributions (must be before /:name)
-        router.get("/api/lxc/distributions", async (_req: Request, res: Response) => {
+        router.get("/api/lxc/distributions", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
+                if (endpoint) {
+                    const result = await callAgent<{ distributions: string[] }>(server, endpoint, "getLxcDistributions");
+                    res.json({ ok: true,
+                        distributions: result.distributions });
+                    return;
+                }
                 const distributions = await LxcContainer.getAvailableDistributions();
                 res.json({ ok: true,
                     distributions });
@@ -61,11 +102,23 @@ export class LxcApiRouter extends Router {
 
         // GET /api/lxc/:name - Get single container
         router.get("/api/lxc/:name", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
                 const { name } = req.params;
                 if (!CONTAINER_NAME_REGEX.test(name)) {
                     res.status(400).json({ ok: false,
                         msg: "Invalid container name" });
+                    return;
+                }
+                if (endpoint) {
+                    try {
+                        const result = await callAgent<{ container: object }>(server, endpoint, "getLxcContainer", name);
+                        res.json({ ok: true,
+                            container: result.container });
+                    } catch (e) {
+                        res.status(404).json({ ok: false,
+                            msg: e instanceof Error ? e.message : "Container not found" });
+                    }
                     return;
                 }
                 try {
@@ -85,6 +138,7 @@ export class LxcApiRouter extends Router {
 
         // POST /api/lxc/ - Create container
         router.post("/api/lxc/", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
                 const { name, dist, release, arch } = req.body as { name?: string; dist?: string; release?: string; arch?: string };
 
@@ -115,6 +169,13 @@ export class LxcApiRouter extends Router {
                     return;
                 }
 
+                if (endpoint) {
+                    await callAgent(server, endpoint, "createLxcContainer", name, dist, release, arch);
+                    res.status(201).json({ ok: true,
+                        msg: "Container created" });
+                    return;
+                }
+
                 await childProcessAsync.spawn(
                     "lxc-create",
                     [ "-n", name, "-t", "download", "--", "--dist", dist, "--release", release, "--arch", arch ],
@@ -133,6 +194,7 @@ export class LxcApiRouter extends Router {
 
         // PUT /api/lxc/:name/config - Save config
         router.put("/api/lxc/:name/config", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
                 const { name } = req.params;
                 const { config } = req.body as { config?: string };
@@ -145,6 +207,18 @@ export class LxcApiRouter extends Router {
                 if (typeof config !== "string") {
                     res.status(400).json({ ok: false,
                         msg: "Missing required field: config" });
+                    return;
+                }
+
+                if (endpoint) {
+                    try {
+                        await callAgent(server, endpoint, "saveLxcConfig", name, config);
+                        res.json({ ok: true,
+                            msg: "Config saved" });
+                    } catch (e) {
+                        res.status(404).json({ ok: false,
+                            msg: e instanceof Error ? e.message : "Container not found" });
+                    }
                     return;
                 }
 
@@ -166,12 +240,25 @@ export class LxcApiRouter extends Router {
 
         // POST /api/lxc/:name/start - Start container
         router.post("/api/lxc/:name/start", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
                 const { name } = req.params;
 
                 if (!CONTAINER_NAME_REGEX.test(name)) {
                     res.status(400).json({ ok: false,
                         msg: "Invalid container name" });
+                    return;
+                }
+
+                if (endpoint) {
+                    try {
+                        await callAgent(server, endpoint, "startLxcContainer", name);
+                        res.json({ ok: true,
+                            msg: "Container started" });
+                    } catch (e) {
+                        res.status(500).json({ ok: false,
+                            msg: e instanceof Error ? e.message : "Failed to start container" });
+                    }
                     return;
                 }
 
@@ -196,12 +283,25 @@ export class LxcApiRouter extends Router {
 
         // POST /api/lxc/:name/stop - Stop container
         router.post("/api/lxc/:name/stop", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
                 const { name } = req.params;
 
                 if (!CONTAINER_NAME_REGEX.test(name)) {
                     res.status(400).json({ ok: false,
                         msg: "Invalid container name" });
+                    return;
+                }
+
+                if (endpoint) {
+                    try {
+                        await callAgent(server, endpoint, "stopLxcContainer", name);
+                        res.json({ ok: true,
+                            msg: "Container stopped" });
+                    } catch (e) {
+                        res.status(500).json({ ok: false,
+                            msg: e instanceof Error ? e.message : "Failed to stop container" });
+                    }
                     return;
                 }
 
@@ -226,12 +326,25 @@ export class LxcApiRouter extends Router {
 
         // DELETE /api/lxc/:name - Delete container
         router.delete("/api/lxc/:name", async (req: Request, res: Response) => {
+            const endpoint = (req.query.endpoint as string) || "";
             try {
                 const { name } = req.params;
 
                 if (!CONTAINER_NAME_REGEX.test(name)) {
                     res.status(400).json({ ok: false,
                         msg: "Invalid container name" });
+                    return;
+                }
+
+                if (endpoint) {
+                    try {
+                        await callAgent(server, endpoint, "deleteLxcContainer", name);
+                        res.json({ ok: true,
+                            msg: "Container deleted" });
+                    } catch (e) {
+                        res.status(500).json({ ok: false,
+                            msg: e instanceof Error ? e.message : "Failed to delete container" });
+                    }
                     return;
                 }
 
