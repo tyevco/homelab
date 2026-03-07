@@ -8,6 +8,7 @@ import childProcessAsync from "promisify-child-process";
 import { log } from "../log";
 import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
 import fs from "fs";
+import { Agent } from "../models/agent";
 
 const STACK_NAME_REGEX = /^[a-z0-9_-]+$/;
 
@@ -109,6 +110,35 @@ export class StackApiRouter extends Router {
         const auth = createApiAuthMiddleware(server.jwtSecret);
 
         router.use("/api/stacks", rateLimitMiddleware(apiRateLimiter), auth);
+        router.use("/api/agents", rateLimitMiddleware(apiRateLimiter), auth);
+
+        // GET /api/agents - List all configured agents with their capabilities
+        router.get("/api/agents", async (_req: Request, res: Response) => {
+            try {
+                const agentList = await Agent.getAgentList();
+                const caps = server.serverAgentManager?.agentCapabilities ?? {};
+                const agents: object[] = Object.values(agentList).map(agent => ({
+                    ...agent.toJSON(),
+                    capabilities: caps[agent.endpoint] ?? {},
+                }));
+                // Include the local server as endpoint ""
+                agents.unshift({
+                    url: "",
+                    username: "",
+                    endpoint: "",
+                    capabilities: {
+                        lxcAvailable: server.lxcAvailable,
+                        version: server.packageJSON.version,
+                    },
+                });
+                res.json({ ok: true,
+                    agents });
+            } catch (e) {
+                log.error("agent-api", e);
+                res.status(500).json({ ok: false,
+                    msg: e instanceof Error ? e.message : "Internal server error" });
+            }
+        });
 
         // GET /api/stacks - List all stacks
         router.get("/api/stacks", async (_req: Request, res: Response) => {
