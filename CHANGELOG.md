@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.2](https://github.com/tyevco/homelab/compare/v1.9.1...v1.9.2) (2026-03-07)
+
+
+### Features
+
+* add logging to lxc-agent for events, container ops, and terminals ([3f09272](https://github.com/tyevco/homelab/commit/3f092727034d35bfe5b3dc48e9c6b857c6ca8f80))
+* add logging to lxc-agent for events, container ops, and terminals ([d89c635](https://github.com/tyevco/homelab/commit/d89c6358cf5ecd3616df0e40d5164524a1b49d82))
+
 ## [1.9.1](https://github.com/tyevco/homelab/compare/v1.9.0...v1.9.1) (2026-03-06)
 
 
