@@ -57,6 +57,21 @@
                 <div class="form-text"></div>
             </div>
 
+            <!-- Default LXC Agent -->
+            <div class="mb-3">
+                <label class="form-label">{{ $t("Default LXC Agent") }}</label>
+                <select v-model="settings.defaultLxcEndpoint" class="form-select">
+                    <option value="">{{ $t("Local server") }}</option>
+                    <option
+                        v-for="(agent, ep) in remoteAgents"
+                        :key="ep"
+                        :value="ep"
+                    >
+                        {{ ep }}{{ agent.capabilities && agent.capabilities.lxcAvailable ? "" : " (no LXC)" }}
+                    </option>
+                </select>
+            </div>
+
             <!-- Save Button -->
             <div>
                 <button class="btn btn-primary" type="submit">
@@ -95,7 +110,11 @@ export default {
         },
         guessTimezone() {
             return dayjs.tz.guess();
-        }
+        },
+        remoteAgents() {
+            const list = this.$root.agentList ?? {};
+            return Object.fromEntries(Object.entries(list).filter(([ ep ]) => ep !== ""));
+        },
     },
 
     methods: {
