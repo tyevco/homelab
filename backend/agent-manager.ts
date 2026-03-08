@@ -14,15 +14,16 @@ import { encryptPassword, decryptPassword } from "./password-hash";
  */
 export class AgentManager {
 
-    protected socket : HomelabSocket;
+    protected socket : HomelabSocket | null;
     protected encryptionKey : string;
     protected agentSocketList : Record<string, SocketClient> = {};
     protected agentLoggedInList : Record<string, boolean> = {};
-    protected agentCapabilities : Record<string, Record<string, unknown>> = {};
+    public agentCapabilities : Record<string, Record<string, unknown>> = {};
+    public containerListCache : Record<string, Record<string, object>> = {};
     protected _firstConnectTime : Dayjs = dayjs();
     protected selfCapabilities : Record<string, unknown> = {};
 
-    constructor(socket: HomelabSocket, encryptionKey : string = "") {
+    constructor(socket: HomelabSocket | null, encryptionKey : string = "") {
         this.socket = socket;
         this.encryptionKey = encryptionKey;
     }
@@ -117,7 +118,7 @@ export class AgentManager {
         let obj = new URL(url);
         let endpoint = obj.host;
 
-        this.socket.emit("agentStatus", {
+        this.socket?.emit("agentStatus", {
             endpoint: endpoint,
             status: "connecting",
         });
@@ -149,14 +150,14 @@ export class AgentManager {
                 if (res.ok) {
                     log.info("agent-manager", "Logged in to the socket server: " + endpoint);
                     this.agentLoggedInList[endpoint] = true;
-                    this.socket.emit("agentStatus", {
+                    this.socket?.emit("agentStatus", {
                         endpoint: endpoint,
                         status: "online",
                     });
                 } else {
                     log.error("agent-manager", "Failed to login to the socket server: " + endpoint);
                     this.agentLoggedInList[endpoint] = false;
-                    this.socket.emit("agentStatus", {
+                    this.socket?.emit("agentStatus", {
                         endpoint: endpoint,
                         status: "offline",
                     });
@@ -166,7 +167,7 @@ export class AgentManager {
 
         client.on("connect_error", (err) => {
             log.error("agent-manager", "Error from the socket server: " + endpoint);
-            this.socket.emit("agentStatus", {
+            this.socket?.emit("agentStatus", {
                 endpoint: endpoint,
                 status: "offline",
             });
@@ -174,14 +175,22 @@ export class AgentManager {
 
         client.on("disconnect", () => {
             log.info("agent-manager", "Disconnected from the socket server: " + endpoint);
-            this.socket.emit("agentStatus", {
+            this.socket?.emit("agentStatus", {
                 endpoint: endpoint,
                 status: "offline",
             });
         });
 
         client.on("agent", (...args : unknown[]) => {
-            this.socket.emit("agent", ...args);
+            // Cache container list pushes for server-level use
+            const [ eventName, data ] = args;
+            if (eventName === "lxcContainerList" && data && typeof data === "object") {
+                const payload = data as { lxcContainerList?: Record<string, object> };
+                if (payload.lxcContainerList) {
+                    this.containerListCache[endpoint] = payload.lxcContainerList;
+                }
+            }
+            this.socket?.emit("agent", ...args);
         });
 
         client.on("info", (res) => {
@@ -197,7 +206,7 @@ export class AgentManager {
 
             // Disconnect if the version is lower than 1.4.0
             if (!isDev && semver.satisfies(res.version, "< 1.4.0")) {
-                this.socket.emit("agentStatus", {
+                this.socket?.emit("agentStatus", {
                     endpoint: endpoint,
                     status: "offline",
                     msg: `${endpoint}: Unsupported version: ` + res.version,
@@ -217,7 +226,7 @@ export class AgentManager {
     async connectAll() {
         this._firstConnectTime = dayjs();
 
-        if (this.socket.endpoint) {
+        if (this.socket?.endpoint) {
             log.info("agent-manager", "This connection is connected as an agent, skip connectAll()");
             return;
         }
@@ -313,7 +322,7 @@ export class AgentManager {
             };
         }
 
-        this.socket.emit("agentList", {
+        this.socket?.emit("agentList", {
             ok: true,
             agentList: result,
         });

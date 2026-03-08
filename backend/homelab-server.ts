@@ -97,6 +97,8 @@ export class HomelabServer {
 
     lxcAvailable : boolean = false;
 
+    serverAgentManager : AgentManager | null = null;
+
     /**
      *
      */
@@ -412,6 +414,9 @@ export class HomelabServer {
 
         this.jwtSecret = jwtSecretBean.value;
 
+        // Initialize server-level agent manager (no browser socket needed)
+        this.serverAgentManager = new AgentManager(null, this.jwtSecret);
+
         // Migrate plaintext agent passwords to encrypted
         await this.migrateAgentPasswords();
 
@@ -437,6 +442,9 @@ export class HomelabServer {
             } else {
                 log.info("server", `Listening on ${this.config.port}`);
             }
+
+            // Connect server-level agent manager to all stored agents
+            this.serverAgentManager!.connectAll().catch((e) => log.error("server", e));
 
             // Run every 10 seconds
             Cron("*/10 * * * * *", {
