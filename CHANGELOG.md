@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.4](https://github.com/tyevco/homelab/compare/v1.9.3...v1.9.4) (2026-03-08)
+
+
+### Features
+
+* add GET /api/agents endpoint with capabilities ([5068049](https://github.com/tyevco/homelab/commit/5068049eed43879ed295d939becb8d265b370c2c))
+* make LXC REST API agent-aware via endpoint routing ([463643d](https://github.com/tyevco/homelab/commit/463643dea615d7f08ea8e1de191a863e26f02b40))
+* make LXC REST API agent-aware via endpoint routing ([7d9f747](https://github.com/tyevco/homelab/commit/7d9f7477eade681b3cfb5d6b1314443d22311be9))
+
 ## [1.9.3](https://github.com/tyevco/homelab/compare/v1.9.2...v1.9.3) (2026-03-07)
 
 
