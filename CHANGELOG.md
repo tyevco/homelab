@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.5](https://github.com/tyevco/homelab/compare/v1.9.4...v1.9.5) (2026-03-08)
+
+
+### Features
+
+* add configurable default LXC agent setting ([5ceb693](https://github.com/tyevco/homelab/commit/5ceb6939eb331127560ca272dddf0c6a47c05b86))
+* add configurable default LXC agent setting ([85ca786](https://github.com/tyevco/homelab/commit/85ca786327a2af1c10a0c1d0d24ee14ad5434147))
+
 ## [1.9.4](https://github.com/tyevco/homelab/compare/v1.9.3...v1.9.4) (2026-03-08)
 
 
