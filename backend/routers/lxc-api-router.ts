@@ -7,6 +7,7 @@ import { createApiAuthMiddleware } from "../util-server";
 import childProcessAsync from "promisify-child-process";
 import { log } from "../log";
 import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
+import { Settings } from "../settings";
 
 const CONTAINER_NAME_REGEX = /^[a-z0-9_.-]+$/;
 
@@ -31,7 +32,11 @@ export class LxcApiRouter extends Router {
         // LXC availability check middleware
         const lxcCheck = async (req: Request, res: Response, next: NextFunction) => {
             const localOk = await LxcContainer.isLxcAvailable();
-            const endpoint = (req.query.endpoint as string) || "";
+            const requested = (req.query.endpoint as string) || "";
+            const defaultEndpoint = requested ? "" : ((await Settings.get("defaultLxcEndpoint")) || "");
+            const endpoint = requested || defaultEndpoint;
+
+            res.locals.lxcEndpoint = endpoint;
 
             if (!localOk && endpoint) {
                 const caps = server.serverAgentManager?.agentCapabilities[endpoint];
@@ -57,7 +62,7 @@ export class LxcApiRouter extends Router {
 
         // GET /api/lxc/ - List all containers
         router.get("/api/lxc/", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 if (endpoint) {
                     const cached = server.serverAgentManager?.containerListCache[endpoint];
@@ -82,7 +87,7 @@ export class LxcApiRouter extends Router {
 
         // GET /api/lxc/distributions - List available OS distributions (must be before /:name)
         router.get("/api/lxc/distributions", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 if (endpoint) {
                     const result = await callAgent<{ distributions: string[] }>(server, endpoint, "getLxcDistributions");
@@ -102,7 +107,7 @@ export class LxcApiRouter extends Router {
 
         // GET /api/lxc/:name - Get single container
         router.get("/api/lxc/:name", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 const { name } = req.params;
                 if (!CONTAINER_NAME_REGEX.test(name)) {
@@ -138,7 +143,7 @@ export class LxcApiRouter extends Router {
 
         // POST /api/lxc/ - Create container
         router.post("/api/lxc/", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 const { name, dist, release, arch } = req.body as { name?: string; dist?: string; release?: string; arch?: string };
 
@@ -194,7 +199,7 @@ export class LxcApiRouter extends Router {
 
         // PUT /api/lxc/:name/config - Save config
         router.put("/api/lxc/:name/config", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 const { name } = req.params;
                 const { config } = req.body as { config?: string };
@@ -240,7 +245,7 @@ export class LxcApiRouter extends Router {
 
         // POST /api/lxc/:name/start - Start container
         router.post("/api/lxc/:name/start", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 const { name } = req.params;
 
@@ -283,7 +288,7 @@ export class LxcApiRouter extends Router {
 
         // POST /api/lxc/:name/stop - Stop container
         router.post("/api/lxc/:name/stop", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 const { name } = req.params;
 
@@ -326,7 +331,7 @@ export class LxcApiRouter extends Router {
 
         // DELETE /api/lxc/:name - Delete container
         router.delete("/api/lxc/:name", async (req: Request, res: Response) => {
-            const endpoint = (req.query.endpoint as string) || "";
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
                 const { name } = req.params;
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RUNNING, FROZEN, EXITED, UNKNOWN } from "../common/util-common";
 
 // The CONTAINER_NAME_REGEX used in lxc-api-router.ts
@@ -330,6 +330,130 @@ describe("LxcApiRouter validation", () => {
         it("should accept multiline config string", () => {
             const config = "lxc.net.0.type = veth\nlxc.net.0.link = lxcbr0\nlxc.rootfs.path = dir:/var/lib/lxc/test/rootfs";
             expect(validateConfigSave("test", config).ok).toBe(true);
+        });
+    });
+
+    describe("lxcCheck middleware endpoint resolution", () => {
+        // Mirrors the resolution logic in lxcCheck:
+        //   const requested = (req.query.endpoint as string) || "";
+        //   const defaultEndpoint = requested ? "" : ((await Settings.get("defaultLxcEndpoint")) || "");
+        //   const endpoint = requested || defaultEndpoint;
+        async function resolveEndpoint(requested: string, settingValue: string | null): Promise<string> {
+            const defaultEndpoint = requested ? "" : (settingValue || "");
+            return requested || defaultEndpoint;
+        }
+
+        it("uses explicit endpoint when provided", async () => {
+            const ep = await resolveEndpoint("http://agent1:3001", "http://default:3001");
+            expect(ep).toBe("http://agent1:3001");
+        });
+
+        it("uses default setting when no explicit endpoint", async () => {
+            const ep = await resolveEndpoint("", "http://default:3001");
+            expect(ep).toBe("http://default:3001");
+        });
+
+        it("returns empty string when no explicit endpoint and no default setting", async () => {
+            const ep = await resolveEndpoint("", "");
+            expect(ep).toBe("");
+        });
+
+        it("returns empty string when setting is null (unset)", async () => {
+            const ep = await resolveEndpoint("", null);
+            expect(ep).toBe("");
+        });
+
+        it("explicit endpoint always wins over default setting", async () => {
+            // Even if a default is configured, explicit ?endpoint= must take precedence
+            const ep = await resolveEndpoint("http://explicit:3001", "http://should-not-use:3001");
+            expect(ep).toBe("http://explicit:3001");
+        });
+
+        it("empty explicit endpoint falls through to default", async () => {
+            // ?endpoint= present but empty string → treated as absent → use default
+            const ep = await resolveEndpoint("", "http://default:3001");
+            expect(ep).toBe("http://default:3001");
+        });
+
+        describe("agentCapabilities validation logic", () => {
+            // Mirrors the lxcCheck guard:
+            //   if (!localOk && endpoint) { check caps.lxcAvailable }
+            //   else if (!localOk) { check anyAgent }
+            function checkAccess(
+                localOk: boolean,
+                endpoint: string,
+                agentCapabilities: Record<string, { lxcAvailable: boolean }>
+            ): { status: number; msg: string } | "next" {
+                if (!localOk && endpoint) {
+                    const caps = agentCapabilities[endpoint];
+                    if (!caps?.lxcAvailable) {
+                        return { status: 503,
+                            msg: "LXC is not available on this endpoint" };
+                    }
+                } else if (!localOk) {
+                    const anyAgent = Object.values(agentCapabilities).some(c => c.lxcAvailable);
+                    if (!anyAgent) {
+                        return { status: 503,
+                            msg: "LXC is not available on this system" };
+                    }
+                }
+                return "next";
+            }
+
+            it("passes when local LXC is available regardless of endpoint", () => {
+                expect(checkAccess(true, "", {})).toBe("next");
+                expect(checkAccess(true, "http://agent:3001", {})).toBe("next");
+            });
+
+            it("passes when local LXC unavailable but endpoint agent has LXC", () => {
+                const caps = { "http://agent:3001": { lxcAvailable: true } };
+                expect(checkAccess(false, "http://agent:3001", caps)).toBe("next");
+            });
+
+            it("503 when local LXC unavailable and endpoint agent lacks LXC", () => {
+                const caps = { "http://agent:3001": { lxcAvailable: false } };
+                const result = checkAccess(false, "http://agent:3001", caps);
+                expect(result).not.toBe("next");
+                expect((result as { status: number }).status).toBe(503);
+                expect((result as { msg: string }).msg).toContain("endpoint");
+            });
+
+            it("503 when local LXC unavailable, endpoint unknown (not in caps)", () => {
+                const result = checkAccess(false, "http://unknown:3001", {});
+                expect(result).not.toBe("next");
+                expect((result as { status: number }).status).toBe(503);
+            });
+
+            it("passes when local LXC unavailable, no explicit endpoint, at least one agent has LXC", () => {
+                const caps = {
+                    "http://agent1:3001": { lxcAvailable: false },
+                    "http://agent2:3001": { lxcAvailable: true },
+                };
+                expect(checkAccess(false, "", caps)).toBe("next");
+            });
+
+            it("503 when local LXC unavailable, no explicit endpoint, no agent has LXC", () => {
+                const caps = {
+                    "http://agent1:3001": { lxcAvailable: false },
+                    "http://agent2:3001": { lxcAvailable: false },
+                };
+                const result = checkAccess(false, "", caps);
+                expect(result).not.toBe("next");
+                expect((result as { status: number }).status).toBe(503);
+                expect((result as { msg: string }).msg).toContain("system");
+            });
+
+            it("503 when local LXC unavailable, no endpoint, no agents at all", () => {
+                const result = checkAccess(false, "", {});
+                expect(result).not.toBe("next");
+                expect((result as { status: number }).status).toBe(503);
+            });
+
+            it("default endpoint treated like explicit endpoint for capability check", () => {
+                // After resolveEndpoint, the default fills endpoint; then checkAccess treats it the same
+                const caps = { "http://default:3001": { lxcAvailable: true } };
+                expect(checkAccess(false, "http://default:3001", caps)).toBe("next");
+            });
         });
     });
 
