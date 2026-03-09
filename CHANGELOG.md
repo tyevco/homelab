@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.14](https://github.com/tyevco/homelab/compare/v1.9.13...v1.9.14) (2026-03-09)
+
+
+### Bug Fixes
+
+* update the pulumi shell scripts ([93ac644](https://github.com/tyevco/homelab/commit/93ac6444a873a747c477133cc2032693045e719c))
+* update the pulumi shell scripts ([32fe5d7](https://github.com/tyevco/homelab/commit/32fe5d7fac06bed6874b058654095115070d0fe0))
+
 ## [1.9.13](https://github.com/tyevco/homelab/compare/v1.9.12...v1.9.13) (2026-03-09)
 
 
