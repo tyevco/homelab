@@ -39,6 +39,12 @@
                     </router-link>
                 </li>
 
+                <li v-if="$root.loggedIn && anyUnraidAvailable" class="nav-item me-2">
+                    <router-link to="/unraid" class="nav-link">
+                        <font-awesome-icon icon="hard-drive" /> Unraid
+                    </router-link>
+                </li>
+
                 <li v-if="$root.loggedIn" class="nav-item">
                     <div class="dropdown dropdown-profile-pic">
                         <div class="nav-link" data-bs-toggle="dropdown">
@@ -126,6 +132,12 @@ export default {
             }
             return Object.values(this.$root.agentList ?? {}).some(
                 (agent) => agent.capabilities && agent.capabilities.lxcAvailable
+            );
+        },
+
+        anyUnraidAvailable() {
+            return Object.values(this.$root.agentList ?? {}).some(
+                (agent) => agent.capabilities && agent.capabilities.unraidAvailable
             );
         },
 
