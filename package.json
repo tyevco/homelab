@@ -30,7 +30,7 @@
     "prepare": "husky || true"
   },
   "lint-staged": {
-    "*.{ts,vue}": [
+    "!(pulumi/**).{ts,vue}": [
       "eslint --fix"
     ]
   },

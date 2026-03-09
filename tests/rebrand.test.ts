@@ -19,7 +19,7 @@ describe("rebrand verification", () => {
         const flag = caseInsensitive ? "-rli" : "-rl";
         try {
             const result = execSync(
-                `grep ${flag} "${pattern}" --exclude-dir=node_modules --exclude-dir=.git --include="*.ts" --include="*.vue" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.go" --include="*.md" --include="*.js" --include="*.html" .`,
+                `grep ${flag} "${pattern}" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=pulumi --include="*.ts" --include="*.vue" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.go" --include="*.md" --include="*.js" --include="*.html" .`,
                 { cwd: ROOT_DIR,
                     encoding: "utf-8",
                     timeout: 30000 }

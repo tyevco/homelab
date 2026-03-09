@@ -358,18 +358,25 @@ export class LxcContainer {
     /**
      * Clone an existing LXC container
      */
-    static async clone(server: HomelabServer, socket: HomelabSocket, sourceName: string, destName: string, initialConfig?: string): Promise<number> {
+    static async clone(server: HomelabServer, socket: HomelabSocket, sourceName: string, destName: string, snapshotName?: string, initialConfig?: string): Promise<number> {
         if (!sourceName.match(/^[a-z0-9_.-]+$/)) {
             throw new ValidationError("Source container name can only contain [a-z][0-9] _ . - characters");
         }
         if (!destName.match(/^[a-z0-9_.-]+$/)) {
             throw new ValidationError("Destination container name can only contain [a-z][0-9] _ . - characters");
         }
+        if (snapshotName && !snapshotName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Snapshot name can only contain [a-z][0-9] _ . - characters");
+        }
+
+        const args = snapshotName
+            ? [ "-n", sourceName, "-s", snapshotName, "-N", destName ]
+            : [ "-n", sourceName, "-N", destName ];
 
         const terminalName = getLxcTerminalName(socket.endpoint, destName);
         const exitCode = await Terminal.exec(
             server, socket, terminalName, "lxc-copy",
-            [ "-n", sourceName, "-N", destName ],
+            args,
             LXC_PATH
         );
 
@@ -389,6 +396,25 @@ export class LxcContainer {
         const existing = await fsAsync.readFile(configPath, "utf-8").catch(() => "");
         const separator = existing.endsWith("\n") ? "" : "\n";
         await fsAsync.writeFile(configPath, existing + separator + "\n" + extra.trimEnd() + "\n");
+    }
+
+    static async listSnapshots(_server: HomelabServer, containerName: string): Promise<string[]> {
+        if (!containerName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Container name can only contain [a-z][0-9] _ . - characters");
+        }
+        try {
+            const res = await childProcessAsync.spawn("lxc-snapshot", [ "-n", containerName, "-L" ], { encoding: "utf-8" });
+            const output = (res.stdout?.toString() || "").trim();
+            if (!output) {
+                return [];
+            }
+            // Each line: "snap0 (/var/lib/lxc/.../snap0) 2024-01-01 ..."
+            return output.split("\n")
+                .map((line: string) => line.trim().split(" ")[0])
+                .filter((name: string) => name.length > 0);
+        } catch {
+            return [];
+        }
     }
 
     async start(socket: HomelabSocket): Promise<number> {

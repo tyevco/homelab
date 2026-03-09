@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.js
+*.d.ts
+*.js.map
+!pulumi-resource-homelab
+!jest.config.js
+sdk/nodejs/*.js
+sdk/nodejs/*.d.ts
+sdk/nodejs/*.js.map
+sdk/nodejs/node_modules/
+examples/*/node_modules/
+coverage/

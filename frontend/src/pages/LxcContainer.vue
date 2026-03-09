@@ -133,6 +133,14 @@
                                         <option v-for="c in cloneableContainers" :key="c.name" :value="c.name">{{ c.name }}</option>
                                     </select>
                                 </div>
+                                <div v-if="cloneSource" class="mb-3">
+                                    <label for="lxc-clone-snapshot" class="form-label">{{ $t("lxcCloneSnapshot") }}</label>
+                                    <select id="lxc-clone-snapshot" v-model="cloneSnapshot" class="form-select">
+                                        <option value="">{{ $t("lxcCloneSnapshotNone") }}</option>
+                                        <option v-for="s in cloneSnapshots" :key="s" :value="s">{{ s }}</option>
+                                    </select>
+                                    <div class="form-text">{{ $t("lxcCloneSnapshotHint") }}</div>
+                                </div>
                             </template>
 
                             <div class="mb-3">
@@ -303,6 +311,8 @@ export default {
             originalConfig: "",
             createMode: "download",
             cloneSource: "",
+            cloneSnapshot: "",
+            cloneSnapshots: [],
             initialConfig: "",
         };
     },
@@ -390,6 +400,19 @@ export default {
             return [ ...archs ].sort();
         },
     },
+    watch: {
+        cloneSource(newSource) {
+            this.cloneSnapshot = "";
+            this.cloneSnapshots = [];
+            if (newSource) {
+                this.$root.emitAgent(this.container.endpoint, "getLxcSnapshots", newSource, (res) => {
+                    if (res.ok) {
+                        this.cloneSnapshots = res.snapshots || [];
+                    }
+                });
+            }
+        },
+    },
     mounted() {
         if (this.isAdd) {
             this.processing = false;
@@ -459,7 +482,7 @@ export default {
                     this.processing = false;
                     return;
                 }
-                this.$root.emitAgent(this.container.endpoint, "cloneLxcContainer", this.cloneSource, this.container.name, this.initialConfig || undefined, (res) => {
+                this.$root.emitAgent(this.container.endpoint, "cloneLxcContainer", this.cloneSource, this.container.name, this.cloneSnapshot || undefined, this.initialConfig || undefined, (res) => {
                     this.processing = false;
                     this.$root.toastRes(res);
                     if (res.ok) {

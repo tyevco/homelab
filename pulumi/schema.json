@@ -1,0 +1,1112 @@
+{
+  "name": "homelab",
+  "displayName": "Homelab",
+  "version": "0.5.0",
+  "pluginDownloadURL": "github://api.github.com/tyevco/pulumi-homelab",
+  "description": "A Pulumi provider for managing homelab infrastructure including Docker Compose stacks, LXC containers, Traefik routes, and OPNsense firewall rules",
+  "keywords": [
+    "pulumi",
+    "homelab",
+    "docker-compose",
+    "lxc",
+    "opnsense",
+    "firewall",
+    "category/infrastructure"
+  ],
+  "license": "Apache-2.0",
+  "config": {
+    "variables": {
+      "url": {
+        "type": "string",
+        "description": "The URL of the homelab server (e.g., http://192.168.1.100:5001)"
+      },
+      "apiKey": {
+        "type": "string",
+        "description": "API key for authenticating with the homelab REST API",
+        "secret": true
+      },
+      "opnsenseUrl": {
+        "type": "string",
+        "description": "The URL of the OPNsense server (e.g., https://192.168.1.1)"
+      },
+      "opnsenseApiKey": {
+        "type": "string",
+        "description": "API key for authenticating with the OPNsense REST API",
+        "secret": true
+      },
+      "opnsenseApiSecret": {
+        "type": "string",
+        "description": "API secret for authenticating with the OPNsense REST API",
+        "secret": true
+      },
+      "opnsenseInsecure": {
+        "type": "boolean",
+        "description": "Skip TLS certificate verification for OPNsense API (default: false)",
+        "default": false
+      }
+    }
+  },
+  "provider": {
+    "description": "The Homelab provider configuration.",
+    "inputProperties": {
+      "url": {
+        "type": "string",
+        "description": "The URL of the homelab server (e.g., http://192.168.1.100:5001)"
+      },
+      "apiKey": {
+        "type": "string",
+        "description": "API key for authenticating with the homelab REST API",
+        "secret": true
+      },
+      "opnsenseUrl": {
+        "type": "string",
+        "description": "The URL of the OPNsense server (e.g., https://192.168.1.1)"
+      },
+      "opnsenseApiKey": {
+        "type": "string",
+        "description": "API key for authenticating with the OPNsense REST API",
+        "secret": true
+      },
+      "opnsenseApiSecret": {
+        "type": "string",
+        "description": "API secret for authenticating with the OPNsense REST API",
+        "secret": true
+      },
+      "opnsenseInsecure": {
+        "type": "boolean",
+        "description": "Skip TLS certificate verification for OPNsense API (default: false)"
+      }
+    },
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "The URL of the homelab server"
+      },
+      "apiKey": {
+        "type": "string",
+        "description": "API key for authenticating with the homelab REST API",
+        "secret": true
+      },
+      "opnsenseUrl": {
+        "type": "string",
+        "description": "The URL of the OPNsense server"
+      },
+      "opnsenseApiKey": {
+        "type": "string",
+        "description": "API key for authenticating with the OPNsense REST API",
+        "secret": true
+      },
+      "opnsenseApiSecret": {
+        "type": "string",
+        "description": "API secret for authenticating with the OPNsense REST API",
+        "secret": true
+      },
+      "opnsenseInsecure": {
+        "type": "boolean",
+        "description": "Skip TLS certificate verification for OPNsense API"
+      }
+    }
+  },
+  "types": {
+    "homelab:index:ExtraFile": {
+      "type": "object",
+      "description": "An extra file to include alongside the Docker Compose stack.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The file name. Must match ^[a-zA-Z0-9][a-zA-Z0-9._-]*$."
+        },
+        "content": {
+          "type": "string",
+          "description": "The file content."
+        }
+      },
+      "required": [
+        "name",
+        "content"
+      ]
+    },
+    "homelab:index:ContainerInfo": {
+      "type": "object",
+      "description": "Information about a container within a stack.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Container name"
+        },
+        "service": {
+          "type": "string",
+          "description": "Docker Compose service name"
+        },
+        "image": {
+          "type": "string",
+          "description": "Container image"
+        },
+        "state": {
+          "type": "string",
+          "description": "Container state (running, exited, etc.)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Human-readable container status"
+        },
+        "health": {
+          "type": "string",
+          "description": "Container health status"
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Port mappings"
+        }
+      }
+    }
+  },
+  "resources": {
+    "homelab:index:Stack": {
+      "description": "Manages a Docker Compose stack on a homelab server via the REST API. Supports creating, updating, starting, stopping, and deleting stacks.",
+      "inputProperties": {
+        "name": {
+          "type": "string",
+          "description": "The stack name. Must be unique on the homelab server."
+        },
+        "composeYaml": {
+          "type": "string",
+          "description": "The Docker Compose YAML content for this stack."
+        },
+        "envFile": {
+          "type": "string",
+          "description": "Optional .env file content for the stack."
+        },
+        "composeOverride": {
+          "type": "string",
+          "description": "Optional docker-compose.override.yml content for the stack."
+        },
+        "autostart": {
+          "type": "boolean",
+          "description": "Whether the stack should autostart (default: false).",
+          "default": false
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Optional display name for the stack."
+        },
+        "running": {
+          "type": "boolean",
+          "description": "Whether the stack should be running (default: true).",
+          "default": true
+        },
+        "extraFiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/types/homelab:index:ExtraFile"
+          },
+          "description": "Optional extra files to include alongside the Docker Compose stack."
+        }
+      },
+      "requiredInputs": [
+        "name",
+        "composeYaml"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The stack name."
+        },
+        "composeYaml": {
+          "type": "string",
+          "description": "The Docker Compose YAML content."
+        },
+        "envFile": {
+          "type": "string",
+          "description": "The .env file content."
+        },
+        "composeOverride": {
+          "type": "string",
+          "description": "The docker-compose.override.yml content."
+        },
+        "autostart": {
+          "type": "boolean",
+          "description": "Whether the stack autostarts."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The display name for the stack."
+        },
+        "running": {
+          "type": "boolean",
+          "description": "Whether the stack is running."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current stack status (running, exited, stopped, partial, unknown)."
+        },
+        "containers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/types/homelab:index:ContainerInfo"
+          },
+          "description": "Information about the containers in this stack."
+        },
+        "extraFiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/types/homelab:index:ExtraFile"
+          },
+          "description": "Extra files included alongside the Docker Compose stack."
+        }
+      },
+      "required": [
+        "name",
+        "composeYaml"
+      ]
+    },
+    "homelab:index:TraefikStaticConfig": {
+      "description": "Manages the Traefik static configuration file (traefik.yml) via the homelab REST API.",
+      "inputProperties": {
+        "content": {
+          "type": "string",
+          "description": "The YAML content of the Traefik static configuration file."
+        }
+      },
+      "requiredInputs": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The YAML content of the static configuration."
+        },
+        "lastModified": {
+          "type": "string",
+          "description": "ISO 8601 timestamp of the last modification."
+        }
+      },
+      "required": [
+        "content"
+      ]
+    },
+    "homelab:index:TraefikRoute": {
+      "description": "Manages a Traefik dynamic route configuration file via the homelab REST API.",
+      "inputProperties": {
+        "name": {
+          "type": "string",
+          "description": "The route name (maps to filename: name → configs/name.yml). Must match ^[a-z0-9_-]+$."
+        },
+        "content": {
+          "type": "string",
+          "description": "The YAML content of the route configuration file."
+        }
+      },
+      "requiredInputs": [
+        "name",
+        "content"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The route name."
+        },
+        "content": {
+          "type": "string",
+          "description": "The YAML content of the route configuration."
+        },
+        "lastModified": {
+          "type": "string",
+          "description": "ISO 8601 timestamp of the last modification."
+        }
+      },
+      "required": [
+        "name",
+        "content"
+      ]
+    },
+    "homelab:index:OpnsenseFirewallRule": {
+      "description": "Manages a firewall filter rule on an OPNsense appliance via the REST API.",
+      "inputProperties": {
+        "description": {
+          "type": "string",
+          "description": "Description of the firewall rule."
+        },
+        "interface": {
+          "type": "string",
+          "description": "Network interface (e.g., lan, wan, opt1)."
+        },
+        "ipprotocol": {
+          "type": "string",
+          "description": "IP protocol version: inet (IPv4), inet6 (IPv6), or inet46 (both). Default: inet."
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Protocol to match (e.g., any, TCP, UDP, TCP/UDP, ICMP). Default: any."
+        },
+        "sourceNet": {
+          "type": "string",
+          "description": "Source network or address (e.g., any, 192.168.1.0/24, or an alias name)."
+        },
+        "sourcePort": {
+          "type": "string",
+          "description": "Source port or port range."
+        },
+        "destinationNet": {
+          "type": "string",
+          "description": "Destination network or address."
+        },
+        "destinationPort": {
+          "type": "string",
+          "description": "Destination port or port range."
+        },
+        "action": {
+          "type": "string",
+          "description": "Rule action: pass, block, or reject."
+        },
+        "direction": {
+          "type": "string",
+          "description": "Traffic direction: in or out. Default: in."
+        },
+        "log": {
+          "type": "boolean",
+          "description": "Whether to log packets matching this rule."
+        },
+        "quick": {
+          "type": "boolean",
+          "description": "Apply quick match (stop processing after this rule). Default: true."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Whether the rule is disabled."
+        },
+        "sequence": {
+          "type": "integer",
+          "description": "Rule priority/order sequence number."
+        }
+      },
+      "requiredInputs": [
+        "action",
+        "interface"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "description": "The UUID assigned by OPNsense."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the firewall rule."
+        },
+        "interface": {
+          "type": "string",
+          "description": "Network interface."
+        },
+        "ipprotocol": {
+          "type": "string",
+          "description": "IP protocol version."
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Protocol to match."
+        },
+        "sourceNet": {
+          "type": "string",
+          "description": "Source network or address."
+        },
+        "sourcePort": {
+          "type": "string",
+          "description": "Source port or port range."
+        },
+        "destinationNet": {
+          "type": "string",
+          "description": "Destination network or address."
+        },
+        "destinationPort": {
+          "type": "string",
+          "description": "Destination port or port range."
+        },
+        "action": {
+          "type": "string",
+          "description": "Rule action."
+        },
+        "direction": {
+          "type": "string",
+          "description": "Traffic direction."
+        },
+        "log": {
+          "type": "boolean",
+          "description": "Whether to log matching packets."
+        },
+        "quick": {
+          "type": "boolean",
+          "description": "Apply quick match."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Whether the rule is disabled."
+        },
+        "sequence": {
+          "type": "integer",
+          "description": "Rule priority/order sequence number."
+        }
+      },
+      "required": [
+        "uuid",
+        "action",
+        "interface"
+      ]
+    },
+    "homelab:index:OpnsenseAlias": {
+      "description": "Manages a firewall alias on an OPNsense appliance via the REST API.",
+      "inputProperties": {
+        "name": {
+          "type": "string",
+          "description": "The alias name. Must be unique."
+        },
+        "type": {
+          "type": "string",
+          "description": "Alias type: host, network, port, mac, url, or urltable."
+        },
+        "content": {
+          "type": "string",
+          "description": "Alias content (newline-separated entries, e.g., IP addresses, networks, ports, or URLs)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the alias."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the alias is enabled. Default: true."
+        }
+      },
+      "requiredInputs": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "description": "The UUID assigned by OPNsense."
+        },
+        "name": {
+          "type": "string",
+          "description": "The alias name."
+        },
+        "type": {
+          "type": "string",
+          "description": "Alias type."
+        },
+        "content": {
+          "type": "string",
+          "description": "Alias content."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the alias."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the alias is enabled."
+        }
+      },
+      "required": [
+        "uuid",
+        "name",
+        "type"
+      ]
+    },
+    "homelab:index:OpnsenseUnboundHostOverride": {
+      "description": "Manages an Unbound DNS host override on an OPNsense appliance via the REST API.",
+      "inputProperties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the host override is enabled. Default: true."
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Hostname (e.g., myhost)."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain name (e.g., example.com)."
+        },
+        "rr": {
+          "type": "string",
+          "description": "DNS record type (A, AAAA, MX, TXT). Default: A."
+        },
+        "server": {
+          "type": "string",
+          "description": "IP address or target for the override."
+        },
+        "mxprio": {
+          "type": "integer",
+          "description": "MX priority (for MX records)."
+        },
+        "mx": {
+          "type": "string",
+          "description": "MX mail server hostname."
+        },
+        "txtdata": {
+          "type": "string",
+          "description": "TXT record data."
+        },
+        "ttl": {
+          "type": "integer",
+          "description": "TTL in seconds."
+        },
+        "addptr": {
+          "type": "boolean",
+          "description": "Whether to create a PTR record. Default: true."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the host override."
+        }
+      },
+      "requiredInputs": [
+        "domain"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "description": "The UUID assigned by OPNsense."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the host override is enabled."
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Hostname."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain name."
+        },
+        "rr": {
+          "type": "string",
+          "description": "DNS record type."
+        },
+        "server": {
+          "type": "string",
+          "description": "IP address or target."
+        },
+        "mxprio": {
+          "type": "integer",
+          "description": "MX priority."
+        },
+        "mx": {
+          "type": "string",
+          "description": "MX mail server hostname."
+        },
+        "txtdata": {
+          "type": "string",
+          "description": "TXT record data."
+        },
+        "ttl": {
+          "type": "integer",
+          "description": "TTL in seconds."
+        },
+        "addptr": {
+          "type": "boolean",
+          "description": "Whether to create a PTR record."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the host override."
+        }
+      },
+      "required": [
+        "uuid",
+        "domain"
+      ]
+    },
+    "homelab:index:OpnsenseUnboundForward": {
+      "description": "Manages an Unbound DNS query forward on an OPNsense appliance via the REST API.",
+      "inputProperties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the forward is enabled. Default: true."
+        },
+        "type": {
+          "type": "string",
+          "description": "Forward type: forward or dot (DNS over TLS). Default: forward."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain to forward queries for (empty for all)."
+        },
+        "server": {
+          "type": "string",
+          "description": "DNS server IP address."
+        },
+        "port": {
+          "type": "integer",
+          "description": "DNS server port."
+        },
+        "verify": {
+          "type": "string",
+          "description": "TLS verification hostname (for DoT)."
+        },
+        "forwardTcpUpstream": {
+          "type": "boolean",
+          "description": "Whether to use TCP for upstream queries. Default: false."
+        },
+        "forwardFirst": {
+          "type": "boolean",
+          "description": "Whether to try forwarding first before resolving. Default: false."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the forward entry."
+        }
+      },
+      "requiredInputs": [
+        "server"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "description": "The UUID assigned by OPNsense."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the forward is enabled."
+        },
+        "type": {
+          "type": "string",
+          "description": "Forward type."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain to forward queries for."
+        },
+        "server": {
+          "type": "string",
+          "description": "DNS server IP address."
+        },
+        "port": {
+          "type": "integer",
+          "description": "DNS server port."
+        },
+        "verify": {
+          "type": "string",
+          "description": "TLS verification hostname."
+        },
+        "forwardTcpUpstream": {
+          "type": "boolean",
+          "description": "Whether to use TCP for upstream."
+        },
+        "forwardFirst": {
+          "type": "boolean",
+          "description": "Whether to try forwarding first."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the forward entry."
+        }
+      },
+      "required": [
+        "uuid",
+        "server"
+      ]
+    },
+    "homelab:index:OpnsenseUnboundAcl": {
+      "description": "Manages an Unbound DNS access control list on an OPNsense appliance via the REST API.",
+      "inputProperties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the ACL is enabled. Default: true."
+        },
+        "name": {
+          "type": "string",
+          "description": "ACL name. Must be unique."
+        },
+        "action": {
+          "type": "string",
+          "description": "ACL action: allow, deny, refuse, allow_snoop, deny_non_local, refuse_non_local. Default: allow."
+        },
+        "networks": {
+          "type": "string",
+          "description": "Networks covered by this ACL (comma-separated CIDR)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the ACL."
+        }
+      },
+      "requiredInputs": [
+        "name",
+        "networks"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "description": "The UUID assigned by OPNsense."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the ACL is enabled."
+        },
+        "name": {
+          "type": "string",
+          "description": "ACL name."
+        },
+        "action": {
+          "type": "string",
+          "description": "ACL action."
+        },
+        "networks": {
+          "type": "string",
+          "description": "Networks covered by this ACL."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the ACL."
+        }
+      },
+      "required": [
+        "uuid",
+        "name",
+        "networks"
+      ]
+    },
+    "homelab:index:OpnsenseUnboundDnsbl": {
+      "description": "Manages an Unbound DNS blocklist on an OPNsense appliance via the REST API.",
+      "inputProperties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the DNSBL entry is enabled. Default: true."
+        },
+        "type": {
+          "type": "string",
+          "description": "DNSBL type."
+        },
+        "lists": {
+          "type": "string",
+          "description": "DNSBL lists to use."
+        },
+        "allowlists": {
+          "type": "string",
+          "description": "Allowlisted domains."
+        },
+        "blocklists": {
+          "type": "string",
+          "description": "Blocklisted domains."
+        },
+        "wildcards": {
+          "type": "string",
+          "description": "Wildcard domain entries."
+        },
+        "sourceNets": {
+          "type": "string",
+          "description": "Source networks."
+        },
+        "address": {
+          "type": "string",
+          "description": "Listen address."
+        },
+        "nxdomain": {
+          "type": "boolean",
+          "description": "Whether to return NXDOMAIN instead of the blocklist address."
+        },
+        "cacheTtl": {
+          "type": "integer",
+          "description": "Cache TTL in seconds. Default: 72000."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the DNSBL entry."
+        }
+      },
+      "requiredInputs": [
+        "description"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "description": "The UUID assigned by OPNsense."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the DNSBL entry is enabled."
+        },
+        "type": {
+          "type": "string",
+          "description": "DNSBL type."
+        },
+        "lists": {
+          "type": "string",
+          "description": "DNSBL lists to use."
+        },
+        "allowlists": {
+          "type": "string",
+          "description": "Allowlisted domains."
+        },
+        "blocklists": {
+          "type": "string",
+          "description": "Blocklisted domains."
+        },
+        "wildcards": {
+          "type": "string",
+          "description": "Wildcard domain entries."
+        },
+        "sourceNets": {
+          "type": "string",
+          "description": "Source networks."
+        },
+        "address": {
+          "type": "string",
+          "description": "Listen address."
+        },
+        "nxdomain": {
+          "type": "boolean",
+          "description": "Whether to return NXDOMAIN."
+        },
+        "cacheTtl": {
+          "type": "integer",
+          "description": "Cache TTL in seconds."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the DNSBL entry."
+        }
+      },
+      "required": [
+        "uuid",
+        "description"
+      ]
+    },
+    "homelab:index:LxcContainer": {
+      "description": "Manages an LXC container on a homelab server via the REST API. Supports creating, configuring, starting, stopping, and deleting containers.",
+      "inputProperties": {
+        "name": {
+          "type": "string",
+          "description": "The container name. Must match ^[a-z0-9_.-]+$."
+        },
+        "dist": {
+          "type": "string",
+          "description": "The Linux distribution (e.g., ubuntu, debian, alpine)."
+        },
+        "release": {
+          "type": "string",
+          "description": "The distribution release (e.g., jammy, bookworm)."
+        },
+        "arch": {
+          "type": "string",
+          "description": "The architecture (e.g., amd64, arm64)."
+        },
+        "config": {
+          "type": "string",
+          "description": "Optional LXC container configuration file content."
+        },
+        "autostart": {
+          "type": "boolean",
+          "description": "Whether the container should autostart (default: false).",
+          "default": false
+        },
+        "sourceContainer": {
+          "type": "string",
+          "description": "If set, clone this existing container instead of creating from scratch. Must match ^[a-z0-9_.-]+$."
+        },
+        "initialConfig": {
+          "type": "string",
+          "description": "Config appended after cloning (only used with sourceContainer). Triggers replacement on change."
+        }
+      },
+      "requiredInputs": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The container name."
+        },
+        "dist": {
+          "type": "string",
+          "description": "The Linux distribution."
+        },
+        "release": {
+          "type": "string",
+          "description": "The distribution release."
+        },
+        "arch": {
+          "type": "string",
+          "description": "The architecture."
+        },
+        "config": {
+          "type": "string",
+          "description": "The LXC container configuration file content."
+        },
+        "autostart": {
+          "type": "boolean",
+          "description": "Whether the container autostarts."
+        },
+        "status": {
+          "type": "integer",
+          "description": "The current container status code."
+        },
+        "ip": {
+          "type": "string",
+          "description": "The container's IP address."
+        },
+        "pid": {
+          "type": "integer",
+          "description": "The container's process ID."
+        },
+        "memory": {
+          "type": "string",
+          "description": "The container's memory usage."
+        },
+        "sourceContainer": {
+          "type": "string",
+          "description": "The source container that was cloned (if applicable)."
+        },
+        "initialConfig": {
+          "type": "string",
+          "description": "Config appended after cloning."
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "homelab:index:NotificationSettings": {
+      "description": "Manages notification provider settings on the homelab server. This is a singleton resource.",
+      "inputProperties": {
+        "ntfyEnabled": {
+          "type": "boolean",
+          "description": "Whether ntfy notifications are enabled."
+        },
+        "ntfyUrl": {
+          "type": "string",
+          "description": "ntfy server URL (required when ntfyEnabled is true)."
+        },
+        "discordEnabled": {
+          "type": "boolean",
+          "description": "Whether Discord notifications are enabled."
+        },
+        "discordWebhookUrl": {
+          "type": "string",
+          "description": "Discord webhook URL (required when discordEnabled is true)."
+        },
+        "gotifyEnabled": {
+          "type": "boolean",
+          "description": "Whether Gotify notifications are enabled."
+        },
+        "gotifyUrl": {
+          "type": "string",
+          "description": "Gotify server URL (required when gotifyEnabled is true)."
+        },
+        "gotifyToken": {
+          "type": "string",
+          "description": "Gotify application token (required when gotifyEnabled is true).",
+          "secret": true
+        },
+        "webhookEnabled": {
+          "type": "boolean",
+          "description": "Whether generic webhook notifications are enabled."
+        },
+        "webhookUrl": {
+          "type": "string",
+          "description": "Webhook URL (required when webhookEnabled is true)."
+        }
+      },
+      "requiredInputs": [],
+      "properties": {
+        "ntfyEnabled": {
+          "type": "boolean",
+          "description": "Whether ntfy notifications are enabled."
+        },
+        "ntfyUrl": {
+          "type": "string",
+          "description": "ntfy server URL."
+        },
+        "discordEnabled": {
+          "type": "boolean",
+          "description": "Whether Discord notifications are enabled."
+        },
+        "discordWebhookUrl": {
+          "type": "string",
+          "description": "Discord webhook URL."
+        },
+        "gotifyEnabled": {
+          "type": "boolean",
+          "description": "Whether Gotify notifications are enabled."
+        },
+        "gotifyUrl": {
+          "type": "string",
+          "description": "Gotify server URL."
+        },
+        "gotifyToken": {
+          "type": "string",
+          "description": "Gotify application token.",
+          "secret": true
+        },
+        "webhookEnabled": {
+          "type": "boolean",
+          "description": "Whether generic webhook notifications are enabled."
+        },
+        "webhookUrl": {
+          "type": "string",
+          "description": "Webhook URL."
+        }
+      },
+      "required": []
+    },
+    "homelab:index:UnraidVm": {
+      "description": "Manages an Unraid VM via the homelab agent REST API. Supports starting and stopping VMs.",
+      "inputProperties": {
+        "name": {
+          "type": "string",
+          "description": "The VM name as reported by Unraid/virsh."
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "The agent endpoint name for the Unraid host (required — Unraid VMs are always agent-based)."
+        },
+        "running": {
+          "type": "boolean",
+          "description": "Whether the VM should be running (default: true).",
+          "default": true
+        }
+      },
+      "requiredInputs": [
+        "name",
+        "endpoint"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The VM name."
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "The agent endpoint name."
+        },
+        "running": {
+          "type": "boolean",
+          "description": "Whether the VM should be running."
+        },
+        "state": {
+          "type": "string",
+          "description": "The current VM state as reported by Unraid (started, stopped, unknown)."
+        }
+      },
+      "required": [
+        "name",
+        "endpoint",
+        "state"
+      ]
+    }
+  },
+  "language": {
+    "nodejs": {
+      "packageName": "@tyevco/pulumi-homelab",
+      "packageDescription": "A Pulumi provider for managing homelab infrastructure",
+      "dependencies": {
+        "cross-fetch": "^4.0.0"
+      }
+    }
+  }
+}

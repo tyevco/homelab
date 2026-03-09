@@ -296,6 +296,7 @@ export async function cloneContainer(
     endpoint: string,
     sourceName: string,
     destName: string,
+    snapshotName?: string,
     initialConfig?: string,
 ): Promise<void> {
     if (!/^[a-z0-9_.-]+$/.test(sourceName)) {
@@ -304,13 +305,20 @@ export async function cloneContainer(
     if (!/^[a-z0-9_.-]+$/.test(destName)) {
         throw new Error("Invalid destination container name");
     }
+    if (snapshotName && !/^[a-z0-9_.-]+$/.test(snapshotName)) {
+        throw new Error("Invalid snapshot name");
+    }
 
-    console.log(`[lxc] Cloning container: ${sourceName} → ${destName}`);
+    const args = snapshotName
+        ? [ "-n", sourceName, "-s", snapshotName, "-N", destName ]
+        : [ "-n", sourceName, "-N", destName ];
+
+    console.log(`[lxc] Cloning container: ${sourceName}${snapshotName ? `@${snapshotName}` : ""} → ${destName}`);
     const code = await AgentTerminal.exec(
         socket,
         getLxcTerminalName(endpoint, destName),
         "lxc-copy",
-        [ "-n", sourceName, "-N", destName ],
+        args,
         LXC_PATH,
     );
     if (code !== 0) {
@@ -319,7 +327,26 @@ export async function cloneContainer(
     if (initialConfig) {
         await appendConfig(destName, initialConfig);
     }
-    console.log(`[lxc] Cloned: ${sourceName} → ${destName}`);
+    console.log(`[lxc] Cloned: ${sourceName}${snapshotName ? `@${snapshotName}` : ""} → ${destName}`);
+}
+
+export async function listSnapshots(containerName: string): Promise<string[]> {
+    if (!/^[a-z0-9_.-]+$/.test(containerName)) {
+        throw new Error("Invalid container name");
+    }
+    try {
+        const res = await spawn("lxc-snapshot", [ "-n", containerName, "-L" ], { encoding: "utf-8" });
+        const output = (res.stdout as string || "").trim();
+        if (!output) {
+            return [];
+        }
+        // Each line: "snap0 (/var/lib/lxc/.../snap0) 2024-01-01 ..."
+        return output.split("\n")
+            .map(line => line.trim().split(" ")[0])
+            .filter(name => name.length > 0);
+    } catch {
+        return [];
+    }
 }
 
 async function appendConfig(name: string, extra: string): Promise<void> {
