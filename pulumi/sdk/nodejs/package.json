@@ -1,6 +1,6 @@
 {
   "name": "@tyevco/pulumi-homelab",
-  "version": "0.6.0",
+  "version": "1.9.7",
   "description": "Pulumi SDK for managing homelab infrastructure",
   "main": "index.js",
   "typings": "index.d.ts",

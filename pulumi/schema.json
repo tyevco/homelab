@@ -1,7 +1,7 @@
 {
   "name": "homelab",
   "displayName": "Homelab",
-  "version": "0.5.0",
+  "version": "1.9.7",
   "pluginDownloadURL": "github://api.github.com/tyevco/pulumi-homelab",
   "description": "A Pulumi provider for managing homelab infrastructure including Docker Compose stacks, LXC containers, Traefik routes, and OPNsense firewall rules",
   "keywords": [
