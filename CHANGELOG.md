@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.7](https://github.com/tyevco/homelab/compare/v1.9.6...v1.9.7) (2026-03-09)
+
+
+### Features
+
+* add extra files support to stacks ([05e92b5](https://github.com/tyevco/homelab/commit/05e92b53fb35773f78cd1dd892d1e6603ad4b9a7))
+* add extra files support to stacks ([91519d4](https://github.com/tyevco/homelab/commit/91519d42ab9ca2dd52c16d1e8239886141f8f30d))
+
 ## [1.9.6](https://github.com/tyevco/homelab/compare/v1.9.5...v1.9.6) (2026-03-09)
 
 
