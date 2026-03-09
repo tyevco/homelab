@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.9.5](https://github.com/tyevco/homelab/compare/v1.9.4...v1.9.5) (2026-03-09)
+
+
+### Features
+
+* add configurable default LXC agent setting ([5ceb693](https://github.com/tyevco/homelab/commit/5ceb6939eb331127560ca272dddf0c6a47c05b86))
+* add configurable default LXC agent setting ([85ca786](https://github.com/tyevco/homelab/commit/85ca786327a2af1c10a0c1d0d24ee14ad5434147))
+* add notification system with ntfy, Discord, Gotify, and webhook providers ([b0d41fe](https://github.com/tyevco/homelab/commit/b0d41fef04b4be4d695988ce6853df1af4937f8c))
+* add Unraid integration with disk, array, shares, and VM management ([b9fe79c](https://github.com/tyevco/homelab/commit/b9fe79cd26c92eef3408ca19650df5d62f970fb5))
+* notifications, Unraid integration, and compose override support ([d817f1a](https://github.com/tyevco/homelab/commit/d817f1aeda7eaf96626edf1a1e8c75e7fcab8d67))
+
+
+### Bug Fixes
+
+* support compose.override.yml and docker-compose.override.yml as override filenames ([cf901c0](https://github.com/tyevco/homelab/commit/cf901c0505da74a0793b326e96068632bb284125))
+
 ## [1.9.4](https://github.com/tyevco/homelab/compare/v1.9.3...v1.9.4) (2026-03-08)
 
 
