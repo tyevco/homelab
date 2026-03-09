@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/tyevco/homelab/compare/pulumi-v1.10.0...pulumi-v1.10.1) (2026-03-09)
+
+
+### Bug Fixes
+
+* **pulumi:** add missing provider entry point wrapper scripts ([d04860c](https://github.com/tyevco/homelab/commit/d04860c394224464a6fb6b6b7140ed72d20ba3f4))
+
 ## [1.10.0](https://github.com/tyevco/homelab/compare/pulumi-v1.9.9...pulumi-v1.10.0) (2026-03-09)
 
 
