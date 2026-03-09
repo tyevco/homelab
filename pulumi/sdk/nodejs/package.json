@@ -21,8 +21,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tyevco/pulumi-homelab.git",
-    "directory": "sdk/nodejs"
+    "url": "https://github.com/tyevco/homelab.git",
+    "directory": "pulumi/sdk/nodejs"
   },
   "license": "Apache-2.0",
   "publishConfig": {
@@ -30,6 +30,6 @@
   },
   "pulumi": {
     "resource": true,
-    "pluginDownloadURL": "github://api.github.com/tyevco/pulumi-homelab"
+    "pluginDownloadURL": "https://github.com/tyevco/homelab/releases/download/pulumi-v${VERSION}"
   }
 }
