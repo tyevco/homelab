@@ -4,6 +4,8 @@ import { LxcApiRouter } from "./routers/lxc-api-router";
 import { StackApiRouter } from "./routers/stack-api-router";
 import { OidcRouter } from "./routers/oidc-router";
 import { TraefikApiRouter } from "./routers/traefik-api-router";
+import { NotificationApiRouter } from "./routers/notification-api-router";
+import { UnraidApiRouter } from "./routers/unraid-api-router";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -65,6 +67,8 @@ export class HomelabServer {
         new LxcApiRouter(),
         new StackApiRouter(),
         new TraefikApiRouter(),
+        new NotificationApiRouter(),
+        new UnraidApiRouter(),
     ];
 
     /**
