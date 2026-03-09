@@ -1,6 +1,6 @@
 {
   "name": "@tyevco/pulumi-homelab-provider",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "private": true,
   "description": "A Pulumi native provider for managing homelab infrastructure via the homelab REST API",
   "main": "dist/index.js",
