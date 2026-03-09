@@ -308,7 +308,19 @@ export class Stack {
                 if (RESERVED_STACK_FILES.has(file.name)) {
                     throw new ValidationError(`"${file.name}" is a reserved filename and cannot be used as an extra file.`);
                 }
-                await fsAsync.writeFile(path.join(dir, file.name), file.content);
+                const filePath = path.join(dir, file.name);
+                // Docker may have created a directory placeholder when a volume mount pointed
+                // to a non-existent file. Remove it so writeFile can succeed.
+                try {
+                    const stat = await fsAsync.stat(filePath);
+                    if (stat.isDirectory()) {
+                        await fsAsync.rm(filePath, { recursive: true,
+                            force: true });
+                    }
+                } catch {
+                    // path doesn't exist yet — that's fine
+                }
+                await fsAsync.writeFile(filePath, file.content);
                 newNames.add(file.name);
             }
             // Remove extra files that were deleted from the list
