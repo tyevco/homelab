@@ -15,7 +15,7 @@ import {
 const providerProto = require("@pulumi/pulumi/proto/provider_pb");
 const emptyProto = require("google-protobuf/google/protobuf/empty_pb");
 
-const REPLACE_FIELDS = ["name", "dist", "release", "arch", "autostart", "sourceContainer", "initialConfig"];
+const REPLACE_FIELDS = ["name", "dist", "release", "arch", "autostart", "sourceContainer", "snapshotName", "initialConfig"];
 const UPDATE_FIELDS = ["config"];
 
 function containerToOutputs(info: LxcContainerInfo, inputs: Record<string, any>): Record<string, any> {
@@ -33,6 +33,9 @@ function containerToOutputs(info: LxcContainerInfo, inputs: Record<string, any>)
   };
   if (inputs.sourceContainer !== undefined) {
     out.sourceContainer = inputs.sourceContainer;
+  }
+  if (inputs.snapshotName !== undefined) {
+    out.snapshotName = inputs.snapshotName;
   }
   if (inputs.initialConfig !== undefined) {
     out.initialConfig = inputs.initialConfig;
@@ -57,7 +60,13 @@ export const lxcContainerResource = {
       if (!/^[a-z0-9_.-]+$/.test(inputs.sourceContainer)) {
         failures.push(makeCheckFailure("sourceContainer", "sourceContainer must match ^[a-z0-9_.-]+$"));
       }
+      if (inputs.snapshotName !== undefined && !/^[a-z0-9_.-]+$/.test(inputs.snapshotName)) {
+        failures.push(makeCheckFailure("snapshotName", "snapshotName must match ^[a-z0-9_.-]+$"));
+      }
     } else {
+      if (inputs.snapshotName !== undefined) {
+        failures.push(makeCheckFailure("snapshotName", "snapshotName can only be used with sourceContainer"));
+      }
       if (!inputs.dist) {
         failures.push(makeCheckFailure("dist", "dist is required"));
       }
@@ -146,7 +155,7 @@ export const lxcContainerResource = {
       ensureConfigured();
 
       if (inputs.sourceContainer) {
-        await cloneLxcContainer(inputs.sourceContainer, inputs.name, inputs.initialConfig);
+        await cloneLxcContainer(inputs.sourceContainer, inputs.name, inputs.snapshotName, inputs.initialConfig);
       } else {
         await createLxcContainer(inputs.name, inputs.dist, inputs.release, inputs.arch);
       }
@@ -192,6 +201,9 @@ export const lxcContainerResource = {
       if (currentInputs.sourceContainer !== undefined) {
         outputs.sourceContainer = currentInputs.sourceContainer;
       }
+      if (currentInputs.snapshotName !== undefined) {
+        outputs.snapshotName = currentInputs.snapshotName;
+      }
       if (currentInputs.initialConfig !== undefined) {
         outputs.initialConfig = currentInputs.initialConfig;
       }
@@ -206,6 +218,9 @@ export const lxcContainerResource = {
       };
       if (currentInputs.sourceContainer !== undefined) {
         inputsRecord.sourceContainer = currentInputs.sourceContainer;
+      }
+      if (currentInputs.snapshotName !== undefined) {
+        inputsRecord.snapshotName = currentInputs.snapshotName;
       }
       if (currentInputs.initialConfig !== undefined) {
         inputsRecord.initialConfig = currentInputs.initialConfig;

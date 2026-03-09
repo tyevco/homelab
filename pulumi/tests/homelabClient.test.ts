@@ -422,11 +422,34 @@ describe("Homelab client API", () => {
       const client = setupConfiguredModule();
       mockedFetch.mockResolvedValueOnce(mockResponse({ ok: true, msg: "Container cloned", container: {} }));
 
-      await client.cloneLxcContainer("base", "new-ct", "lxc.net.0.type = veth");
+      await client.cloneLxcContainer("base", "new-ct", undefined, "lxc.net.0.type = veth");
 
       const [, opts] = mockedFetch.mock.calls[0] as [string, any];
       const body = JSON.parse(opts.body);
       expect(body.initialConfig).toBe("lxc.net.0.type = veth");
+    });
+
+    it("sends snapshotName when provided", async () => {
+      const client = setupConfiguredModule();
+      mockedFetch.mockResolvedValueOnce(mockResponse({ ok: true, msg: "Container cloned", container: {} }));
+
+      await client.cloneLxcContainer("base", "new-ct", "snap0");
+
+      const [, opts] = mockedFetch.mock.calls[0] as [string, any];
+      const body = JSON.parse(opts.body);
+      expect(body.snapshotName).toBe("snap0");
+      expect(body.initialConfig).toBe("");
+    });
+
+    it("omits snapshotName from body when not provided", async () => {
+      const client = setupConfiguredModule();
+      mockedFetch.mockResolvedValueOnce(mockResponse({ ok: true, msg: "Container cloned", container: {} }));
+
+      await client.cloneLxcContainer("base", "new-ct");
+
+      const [, opts] = mockedFetch.mock.calls[0] as [string, any];
+      const body = JSON.parse(opts.body);
+      expect(body.snapshotName).toBeUndefined();
     });
   });
 

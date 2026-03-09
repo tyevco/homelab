@@ -262,10 +262,11 @@ export async function stopLxcContainer(name: string): Promise<void> {
   await request<{ ok: boolean; msg: string }>("POST", `/api/lxc/${encodeURIComponent(name)}/stop${endpointQuery()}`);
 }
 
-export async function cloneLxcContainer(sourceName: string, destName: string, initialConfig?: string): Promise<void> {
+export async function cloneLxcContainer(sourceName: string, destName: string, snapshotName?: string, initialConfig?: string): Promise<void> {
   await request<{ ok: boolean; msg: string; container: LxcContainerInfo }>("POST", `/api/lxc/clone${endpointQuery()}`, {
     sourceName,
     destName,
+    snapshotName: snapshotName || undefined,
     initialConfig: initialConfig || "",
   });
 }

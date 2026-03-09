@@ -18,6 +18,8 @@ export interface LxcContainerArgs {
   autostart?: pulumi.Input<boolean>;
   /** If set, clone this existing container instead of creating from scratch. Triggers replacement on change. */
   sourceContainer?: pulumi.Input<string>;
+  /** If set, clone from this snapshot of sourceContainer instead of the live container. Triggers replacement on change. */
+  snapshotName?: pulumi.Input<string>;
   /** Config appended after cloning (only used with sourceContainer). Triggers replacement on change. */
   initialConfig?: pulumi.Input<string>;
 }
@@ -34,6 +36,7 @@ export class LxcContainer extends pulumi.CustomResource {
   public readonly pid!: pulumi.Output<number>;
   public readonly memory!: pulumi.Output<string>;
   public readonly sourceContainer!: pulumi.Output<string | undefined>;
+  public readonly snapshotName!: pulumi.Output<string | undefined>;
   public readonly initialConfig!: pulumi.Output<string | undefined>;
 
   constructor(name: string, args: LxcContainerArgs, opts?: pulumi.CustomResourceOptions) {

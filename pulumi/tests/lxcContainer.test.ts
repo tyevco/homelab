@@ -100,6 +100,32 @@ describe("lxcContainer check", () => {
     expect(failures[0].getProperty()).toBe("sourceContainer");
   });
 
+  it("returns failure when snapshotName has invalid characters", async () => {
+    const call = makeCheckCall({ name: "new-ct", sourceContainer: "base", snapshotName: "INVALID SNAP!" });
+    const { response } = await callHandler(lxcContainerResource.check, call);
+
+    const failures = response.getFailuresList();
+    expect(failures.length).toBe(1);
+    expect(failures[0].getProperty()).toBe("snapshotName");
+  });
+
+  it("returns failure when snapshotName is set without sourceContainer", async () => {
+    const call = makeCheckCall({ name: "test", dist: "ubuntu", release: "jammy", arch: "amd64", snapshotName: "snap0" });
+    const { response } = await callHandler(lxcContainerResource.check, call);
+
+    const failures = response.getFailuresList();
+    expect(failures.length).toBe(1);
+    expect(failures[0].getProperty()).toBe("snapshotName");
+    expect(failures[0].getReason()).toContain("sourceContainer");
+  });
+
+  it("accepts valid snapshotName with sourceContainer", async () => {
+    const call = makeCheckCall({ name: "new-ct", sourceContainer: "base", snapshotName: "snap0" });
+    const { response } = await callHandler(lxcContainerResource.check, call);
+
+    expect(response.getFailuresList().length).toBe(0);
+  });
+
   it("defaults autostart to false", async () => {
     const call = makeCheckCall({ name: "test", dist: "ubuntu", release: "jammy", arch: "amd64" });
     const { response } = await callHandler(lxcContainerResource.check, call);
@@ -194,6 +220,17 @@ describe("lxcContainer diff", () => {
     expect(response.getChanges()).toBe(providerProto.DiffResponse.DiffChanges.DIFF_SOME);
     expect(response.getDiffsList()).toContain("autostart");
     expect(response.getReplacesList()).toContain("autostart");
+  });
+
+  it("marks snapshotName change as UPDATE_REPLACE", async () => {
+    const olds = { name: "test", sourceContainer: "base", snapshotName: "snap0" };
+    const news = { name: "test", sourceContainer: "base", snapshotName: "snap1" };
+    const call = makeDiffCall(olds, news);
+    const { response } = await callHandler(lxcContainerResource.diff, call);
+
+    expect(response.getChanges()).toBe(providerProto.DiffResponse.DiffChanges.DIFF_SOME);
+    expect(response.getDiffsList()).toContain("snapshotName");
+    expect(response.getReplacesList()).toContain("snapshotName");
   });
 
   it("detects multiple changes", async () => {
@@ -304,7 +341,7 @@ describe("lxcContainer create", () => {
 
     expect(err).toBeNull();
     expect(response.getId()).toBe("new-ct");
-    expect(homelabClient.cloneLxcContainer).toHaveBeenCalledWith("base", "new-ct", undefined);
+    expect(homelabClient.cloneLxcContainer).toHaveBeenCalledWith("base", "new-ct", undefined, undefined);
     expect(homelabClient.createLxcContainer).not.toHaveBeenCalled();
     expect(homelabClient.startLxcContainer).toHaveBeenCalledWith("new-ct");
   });
@@ -319,7 +356,33 @@ describe("lxcContainer create", () => {
     const call = makeCreateCall(inputs);
     await callHandler(lxcContainerResource.create, call);
 
-    expect(homelabClient.cloneLxcContainer).toHaveBeenCalledWith("base", "new-ct", "lxc.net.0.type = veth");
+    expect(homelabClient.cloneLxcContainer).toHaveBeenCalledWith("base", "new-ct", undefined, "lxc.net.0.type = veth");
+  });
+
+  it("passes snapshotName to cloneLxcContainer when provided", async () => {
+    const containerInfo = { name: "new-ct", status: 3, ip: "10.0.0.6", autostart: false, pid: 789, memory: "256MB", config: "" };
+    homelabClient.cloneLxcContainer.mockResolvedValue(undefined);
+    homelabClient.startLxcContainer.mockResolvedValue(undefined);
+    homelabClient.getLxcContainer.mockResolvedValue(containerInfo);
+
+    const inputs = { name: "new-ct", sourceContainer: "base", snapshotName: "snap0" };
+    const call = makeCreateCall(inputs);
+    await callHandler(lxcContainerResource.create, call);
+
+    expect(homelabClient.cloneLxcContainer).toHaveBeenCalledWith("base", "new-ct", "snap0", undefined);
+  });
+
+  it("passes both snapshotName and initialConfig to cloneLxcContainer", async () => {
+    const containerInfo = { name: "new-ct", status: 3, ip: "10.0.0.6", autostart: false, pid: 789, memory: "256MB", config: "" };
+    homelabClient.cloneLxcContainer.mockResolvedValue(undefined);
+    homelabClient.startLxcContainer.mockResolvedValue(undefined);
+    homelabClient.getLxcContainer.mockResolvedValue(containerInfo);
+
+    const inputs = { name: "new-ct", sourceContainer: "base", snapshotName: "snap0", initialConfig: "lxc.net.0.type = veth" };
+    const call = makeCreateCall(inputs);
+    await callHandler(lxcContainerResource.create, call);
+
+    expect(homelabClient.cloneLxcContainer).toHaveBeenCalledWith("base", "new-ct", "snap0", "lxc.net.0.type = veth");
   });
 });
 
