@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.10](https://github.com/tyevco/homelab/compare/v1.9.9...v1.9.10) (2026-03-09)
+
+
+### Features
+
+* add LXC snapshot cloning and Pulumi provider integration ([36d74a2](https://github.com/tyevco/homelab/commit/36d74a2572e258cf10e320b6c6e445234f690525))
+
 ## [1.9.9](https://github.com/tyevco/homelab/compare/v1.9.8...v1.9.9) (2026-03-09)
 
 
