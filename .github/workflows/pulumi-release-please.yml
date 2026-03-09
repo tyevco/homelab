@@ -14,6 +14,9 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    concurrency:
+      group: pulumi-release-please
+      cancel-in-progress: true
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       tag_name: ${{ steps.release.outputs.pulumi--tag_name }}
