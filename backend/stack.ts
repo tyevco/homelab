@@ -6,6 +6,7 @@ import { HomelabSocket, fileExists, ValidationError } from "./util-server";
 import path from "path";
 import {
     acceptedComposeFileNames,
+    acceptedComposeOverrideFileNames,
     COMBINED_TERMINAL_COLS,
     COMBINED_TERMINAL_ROWS,
     CREATED_FILE,
@@ -25,6 +26,8 @@ export class Stack {
     protected _status: number = UNKNOWN;
     protected _composeYAML?: string;
     protected _composeENV?: string;
+    protected _composeOverride?: string;
+    protected _composeOverrideFileName: string = "docker-compose.override.yml";
     protected _configFilePath?: string;
     protected _composeFileName: string = "compose.yaml";
     protected server: HomelabServer;
@@ -33,17 +36,25 @@ export class Stack {
 
     protected static managedStackList: Map<string, Stack> = new Map();
 
-    constructor(server : HomelabServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false) {
+    constructor(server : HomelabServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverride? : string) {
         this.name = name;
         this.server = server;
         this._composeYAML = composeYAML;
         this._composeENV = composeENV;
+        this._composeOverride = composeOverride;
 
         if (!skipFSOperations) {
             // Check if compose file name is different from compose.yaml
             for (const filename of acceptedComposeFileNames) {
                 if (fs.existsSync(path.join(this.path, filename))) {
                     this._composeFileName = filename;
+                    break;
+                }
+            }
+            // Check which override filename is in use
+            for (const filename of acceptedComposeOverrideFileNames) {
+                if (fs.existsSync(path.join(this.path, filename))) {
+                    this._composeOverrideFileName = filename;
                     break;
                 }
             }
@@ -170,6 +181,17 @@ export class Stack {
         return this._composeENV;
     }
 
+    get composeOverride() : string {
+        if (this._composeOverride === undefined) {
+            try {
+                this._composeOverride = fs.readFileSync(path.join(this.path, this._composeOverrideFileName), "utf-8");
+            } catch (e) {
+                this._composeOverride = "";
+            }
+        }
+        return this._composeOverride;
+    }
+
     get path() : string {
         return path.join(this.server.stacksDir, this.name);
     }
@@ -221,6 +243,22 @@ export class Stack {
         // If .env is not existing and the composeENV is empty, we don't need to write it
         if (await fileExists(envPath) || this.composeENV.trim() !== "") {
             await fsAsync.writeFile(envPath, this.composeENV);
+        }
+
+        const overridePath = path.join(dir, this._composeOverrideFileName);
+
+        if (this._composeOverride !== undefined) {
+            if (this._composeOverride.trim() !== "") {
+                await fsAsync.writeFile(overridePath, this._composeOverride);
+            } else {
+                // Explicitly cleared — remove any existing override file (either name)
+                for (const filename of acceptedComposeOverrideFileNames) {
+                    const p = path.join(dir, filename);
+                    if (await fileExists(p)) {
+                        await fsAsync.rm(p, { force: true });
+                    }
+                }
+            }
         }
     }
 

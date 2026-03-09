@@ -125,6 +125,13 @@ export const acceptedComposeFileNames = [
     "compose.yml",
 ];
 
+export const acceptedComposeOverrideFileNames = [
+    "docker-compose.override.yml",
+    "docker-compose.override.yaml",
+    "compose.override.yml",
+    "compose.override.yaml",
+];
+
 /**
  * Generate a decimal integer number from a string
  * @param str Input
