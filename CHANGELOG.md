@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.11](https://github.com/tyevco/homelab/compare/v1.9.10...v1.9.11) (2026-03-09)
+
+
+### Bug Fixes
+
+* **pulumi:** add missing provider entry point wrapper scripts ([d04860c](https://github.com/tyevco/homelab/commit/d04860c394224464a6fb6b6b7140ed72d20ba3f4))
+
 ## [1.9.10](https://github.com/tyevco/homelab/compare/v1.9.9...v1.9.10) (2026-03-09)
 
 
