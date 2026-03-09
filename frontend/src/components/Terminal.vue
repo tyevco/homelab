@@ -1,5 +1,8 @@
 <template>
-    <div class="shadow-box">
+    <div class="shadow-box terminal-wrapper">
+        <button class="terminal-copy-btn" :title="$t('copyToClipboard')" @click="copyOutput">
+            <font-awesome-icon icon="copy" />
+        </button>
         <div v-pre ref="terminal" class="main-terminal"></div>
     </div>
 </template>
@@ -8,6 +11,7 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { TERMINAL_COLS, TERMINAL_ROWS } from "../../../common/util-common";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 export default {
     /**
@@ -15,7 +19,7 @@ export default {
      */
     terminal: null,
     components: {
-
+        FontAwesomeIcon,
     },
     props: {
         name: {
@@ -338,16 +342,49 @@ export default {
         },
 
         /**
-         * Handle right-click context menu for paste operation
+         * Handle right-click context menu
          */
         handleContextMenu(event) {
-            // Prevent default context menu
             event.preventDefault();
 
-            // Only handle paste for modes that support input
-            if (this.mode === "mainTerminal" || this.mode === "interactive" || this.mode === "interactiveRaw") {
-                this.handlePaste();
+            if (this.mode === "displayOnly") {
+                // Copy selected text, or all output if nothing selected
+                const selected = this.terminal.getSelection();
+                this.copyToClipboard(selected || this.getAllText());
+            } else if (this.mode === "mainTerminal" || this.mode === "interactive" || this.mode === "interactiveRaw") {
+                const selected = this.terminal.getSelection();
+                if (selected) {
+                    this.copyToClipboard(selected);
+                } else {
+                    this.handlePaste();
+                }
             }
+        },
+
+        /**
+         * Get all text content from the terminal buffer
+         */
+        getAllText() {
+            const buffer = this.terminal.buffer.active;
+            let text = "";
+            for (let i = 0; i < buffer.length; i++) {
+                const line = buffer.getLine(i);
+                if (line) {
+                    text += line.translateToString(true);
+                    if (!line.isWrapped) {
+                        text += "\n";
+                    }
+                }
+            }
+            return text.trimEnd();
+        },
+
+        /**
+         * Copy terminal output to clipboard — selected text, or all if nothing selected
+         */
+        async copyOutput() {
+            const selected = this.terminal.getSelection();
+            await this.copyToClipboard(selected || this.getAllText());
         },
 
         /**
@@ -376,8 +413,37 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.terminal-wrapper {
+    position: relative;
+}
+
 .main-terminal {
     height: 100%;
+}
+
+.terminal-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 2px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+
+    &:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.2);
+    }
+}
+
+.terminal-wrapper:hover .terminal-copy-btn {
+    opacity: 1;
 }
 </style>
 

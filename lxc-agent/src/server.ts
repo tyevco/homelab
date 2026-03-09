@@ -279,10 +279,24 @@ async function dispatch(socket: Socket, endpoint: string, eventName: string, arg
             }
 
             case "createLxcContainer": {
-                const [ name, dist, release, arch ] = args as [string, string, string, string];
-                await lxc.createContainer(socket, endpoint, name, dist, release, arch);
+                const [ name, dist, release, arch, initialConfig ] = args as [string, string, string, string, string | undefined];
+                await lxc.createContainer(socket, endpoint, name, dist, release, arch, initialConfig || undefined);
                 await pushList();
                 ok("Created");
+                break;
+            }
+
+            case "cloneLxcContainer": {
+                const [ sourceName, destName, initialConfig ] = args as [string, string, string | undefined];
+                if (typeof sourceName !== "string") {
+                    throw new Error("Source name must be a string");
+                }
+                if (typeof destName !== "string") {
+                    throw new Error("Destination name must be a string");
+                }
+                await lxc.cloneContainer(socket, endpoint, sourceName, destName, initialConfig || undefined);
+                await pushList();
+                ok("Cloned");
                 break;
             }
 

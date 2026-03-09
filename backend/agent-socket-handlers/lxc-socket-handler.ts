@@ -196,7 +196,12 @@ export class LxcSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("createLxcContainer", async (name: unknown, dist: unknown, release: unknown, arch: unknown, callback) => {
+        agentSocket.on("createLxcContainer", async (name: unknown, dist: unknown, release: unknown, arch: unknown, initialConfig: unknown, callback) => {
+            // Handle optional initialConfig — if 5th arg is a function, it's the callback
+            if (typeof initialConfig === "function") {
+                callback = initialConfig;
+                initialConfig = undefined;
+            }
             try {
                 checkLogin(socket);
 
@@ -213,11 +218,39 @@ export class LxcSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Architecture must be a string");
                 }
 
-                await LxcContainer.create(server, socket, name, dist, release, arch);
+                await LxcContainer.create(server, socket, name, dist, release, arch, typeof initialConfig === "string" ? initialConfig : undefined);
                 server.sendLxcContainerList();
                 callbackResult({
                     ok: true,
                     msg: "Created",
+                    msgi18n: true,
+                }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("cloneLxcContainer", async (sourceName: unknown, destName: unknown, initialConfig: unknown, callback) => {
+            // Handle optional initialConfig — if 3rd arg is a function, it's the callback
+            if (typeof initialConfig === "function") {
+                callback = initialConfig;
+                initialConfig = undefined;
+            }
+            try {
+                checkLogin(socket);
+
+                if (typeof sourceName !== "string") {
+                    throw new ValidationError("Source container name must be a string");
+                }
+                if (typeof destName !== "string") {
+                    throw new ValidationError("Destination container name must be a string");
+                }
+
+                await LxcContainer.clone(server, socket, sourceName, destName, typeof initialConfig === "string" ? initialConfig : undefined);
+                server.sendLxcContainerList();
+                callbackResult({
+                    ok: true,
+                    msg: "Cloned",
                     msgi18n: true,
                 }, callback);
             } catch (e) {

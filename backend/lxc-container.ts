@@ -322,7 +322,7 @@ export class LxcContainer {
     /**
      * Create a new LXC container
      */
-    static async create(server: HomelabServer, socket: HomelabSocket, name: string, dist: string, release: string, arch: string): Promise<number> {
+    static async create(server: HomelabServer, socket: HomelabSocket, name: string, dist: string, release: string, arch: string, initialConfig?: string): Promise<number> {
         // Validate inputs
         if (!name.match(/^[a-z0-9_.-]+$/)) {
             throw new ValidationError("Container name can only contain [a-z][0-9] _ . - characters");
@@ -348,7 +348,47 @@ export class LxcContainer {
             throw new Error("Failed to create LXC container, please check the terminal output for more information.");
         }
 
+        if (initialConfig) {
+            await LxcContainer.appendConfig(name, initialConfig);
+        }
+
         return exitCode;
+    }
+
+    /**
+     * Clone an existing LXC container
+     */
+    static async clone(server: HomelabServer, socket: HomelabSocket, sourceName: string, destName: string, initialConfig?: string): Promise<number> {
+        if (!sourceName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Source container name can only contain [a-z][0-9] _ . - characters");
+        }
+        if (!destName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Destination container name can only contain [a-z][0-9] _ . - characters");
+        }
+
+        const terminalName = getLxcTerminalName(socket.endpoint, destName);
+        const exitCode = await Terminal.exec(
+            server, socket, terminalName, "lxc-copy",
+            [ "-n", sourceName, "-N", destName ],
+            LXC_PATH
+        );
+
+        if (exitCode !== 0) {
+            throw new Error("Failed to clone LXC container, please check the terminal output for more information.");
+        }
+
+        if (initialConfig) {
+            await LxcContainer.appendConfig(destName, initialConfig);
+        }
+
+        return exitCode;
+    }
+
+    private static async appendConfig(name: string, extra: string): Promise<void> {
+        const configPath = path.join(LXC_PATH, name, "config");
+        const existing = await fsAsync.readFile(configPath, "utf-8").catch(() => "");
+        const separator = existing.endsWith("\n") ? "" : "\n";
+        await fsAsync.writeFile(configPath, existing + separator + "\n" + extra.trimEnd() + "\n");
     }
 
     async start(socket: HomelabSocket): Promise<number> {
