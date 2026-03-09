@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.2](https://github.com/tyevco/homelab/compare/pulumi-v1.10.1...pulumi-v1.10.2) (2026-03-09)
+
+
+### Bug Fixes
+
+* **pulumi:** correct plugin download URL for monorepo ([b0cacf3](https://github.com/tyevco/homelab/commit/b0cacf3fea787a9d39ceae0eca9b92bb311143a1))
+* **pulumi:** correct pluginDownloadURL to use monorepo location and pulumi-v tag format ([b312b20](https://github.com/tyevco/homelab/commit/b312b20f279fde559879a5069dd7daeec30b3732))
+
 ## [1.10.1](https://github.com/tyevco/homelab/compare/pulumi-v1.10.0...pulumi-v1.10.1) (2026-03-09)
 
 
