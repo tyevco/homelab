@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 
 const PLUGIN_VERSION: string = require("./package.json").version;
-const PLUGIN_DOWNLOAD_URL = "github://api.github.com/tyevco/pulumi-homelab";
+const PLUGIN_DOWNLOAD_URL = "https://github.com/tyevco/homelab/releases/download/pulumi-v${VERSION}";
 
 export interface OpnsenseUnboundHostOverrideArgs {
   /** Whether the host override is enabled. Default: true. */

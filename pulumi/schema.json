@@ -909,6 +909,10 @@
           "type": "string",
           "description": "If set, clone this existing container instead of creating from scratch. Must match ^[a-z0-9_.-]+$."
         },
+        "snapshotName": {
+          "type": "string",
+          "description": "If set, clone from this snapshot of sourceContainer instead of the live container. Must match ^[a-z0-9_.-]+$."
+        },
         "initialConfig": {
           "type": "string",
           "description": "Config appended after cloning (only used with sourceContainer). Triggers replacement on change."
@@ -961,6 +965,10 @@
         "sourceContainer": {
           "type": "string",
           "description": "The source container that was cloned (if applicable)."
+        },
+        "snapshotName": {
+          "type": "string",
+          "description": "The snapshot name used during cloning (if applicable)."
         },
         "initialConfig": {
           "type": "string",
