@@ -1,0 +1,35 @@
+{
+  "name": "@tyevco/pulumi-homelab",
+  "version": "0.6.0",
+  "description": "Pulumi SDK for managing homelab infrastructure",
+  "main": "index.js",
+  "typings": "index.d.ts",
+  "files": [
+    "*.js",
+    "*.d.ts",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.132.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyevco/pulumi-homelab.git",
+    "directory": "sdk/nodejs"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "pulumi": {
+    "resource": true,
+    "pluginDownloadURL": "github://api.github.com/tyevco/pulumi-homelab"
+  }
+}

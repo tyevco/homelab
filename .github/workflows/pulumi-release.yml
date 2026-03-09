@@ -1,0 +1,101 @@
+name: Pulumi Release (Manual)
+
+on:
+  push:
+    tags:
+      - 'pulumi-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.5.1)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: pulumi
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pulumi/package-lock.json
+          registry-url: https://registry.npmjs.org
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "VERSION=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "VERSION=${GITHUB_REF_NAME#pulumi-v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Patch version in package files
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # Update provider package.json
+          jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
+          # Update schema.json
+          jq --arg v "$VERSION" '.version = $v' schema.json > schema.json.tmp && mv schema.json.tmp schema.json
+          # Update SDK package.json
+          jq --arg v "$VERSION" '.version = $v' sdk/nodejs/package.json > sdk/nodejs/package.json.tmp && mv sdk/nodejs/package.json.tmp sdk/nodejs/package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build provider
+        run: npm run build
+
+      - name: Stage plugin archive
+        run: |
+          STAGING="$(mktemp -d)"
+          # Copy provider artifacts
+          cp -r dist "$STAGING/"
+          cp package.json schema.json "$STAGING/"
+          cp pulumi-resource-homelab pulumi-resource-homelab.cmd "$STAGING/"
+          # Install production-only dependencies into staging
+          cp package-lock.json "$STAGING/"
+          cd "$STAGING" && npm ci --omit=dev && rm package-lock.json
+          # Remove all .bin symlinks — Pulumi's archive extractor can't handle them
+          find node_modules -name '.bin' -type d -exec rm -rf {} +
+          echo "STAGING=$STAGING" >> "$GITHUB_ENV"
+
+      - name: Create platform archives
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          ARCHIVES="$(mktemp -d)"
+          cd "$STAGING"
+          for PLATFORM in linux-amd64 darwin-amd64 darwin-arm64 windows-amd64; do
+            ARCHIVE_NAME="pulumi-resource-homelab-v${VERSION}-${PLATFORM}.tar.gz"
+            tar czf "${ARCHIVES}/${ARCHIVE_NAME}" .
+          done
+          echo "ARCHIVES=$ARCHIVES" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: ${{ env.ARCHIVES }}/*.tar.gz
+
+      - name: Build SDK
+        working-directory: pulumi/sdk/nodejs
+        run: npm ci && npm run build
+
+      - name: Publish SDK to npm
+        working-directory: pulumi/sdk/nodejs
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

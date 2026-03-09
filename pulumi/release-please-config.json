@@ -1,0 +1,23 @@
+{
+  "packages": {
+    "pulumi": {
+      "release-type": "node",
+      "component": "pulumi",
+      "include-component-in-tag": true,
+      "bump-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "pulumi/schema.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "pulumi/sdk/nodejs/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}

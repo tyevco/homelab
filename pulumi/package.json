@@ -1,0 +1,40 @@
+{
+  "name": "@tyevco/pulumi-homelab-provider",
+  "version": "0.5.5",
+  "private": true,
+  "description": "A Pulumi native provider for managing homelab infrastructure via the homelab REST API",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "rebuild": "npm run clean && npm run build",
+    "deploy:local": "npm run rebuild && VERSION=$(node -p \"require('./package.json').version\") && mkdir -p ~/.pulumi/plugins/resource-homelab-v${VERSION} && cp -r dist package.json node_modules schema.json pulumi-resource-homelab pulumi-resource-homelab.cmd ~/.pulumi/plugins/resource-homelab-v${VERSION}/",
+    "test": "jest",
+    "build:sdk": "cd sdk/nodejs && npm ci && npm run build",
+    "sync-version": "node -e \"const fs=require('fs'); const v=require('./package.json').version; const p='sdk/nodejs/package.json'; const sdk=JSON.parse(fs.readFileSync(p,'utf8')); sdk.version=v; fs.writeFileSync(p,JSON.stringify(sdk,null,2)+'\\n');\"",
+    "publish:sdk": "npm run build:sdk && cd sdk/nodejs && npm publish --access public"
+  },
+  "keywords": [
+    "pulumi",
+    "homelab",
+    "lxc",
+    "infrastructure",
+    "docker-compose"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.8.0",
+    "@pulumi/pulumi": "^3.132.0",
+    "cross-fetch": "^4.0.0",
+    "google-protobuf": "3.21.4",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.0.0"
+  }
+}
