@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.4](https://github.com/tyevco/homelab/compare/pulumi-v1.10.3...pulumi-v1.10.4) (2026-03-09)
+
+
+### Bug Fixes
+
+* update the pulumi shell scripts ([93ac644](https://github.com/tyevco/homelab/commit/93ac6444a873a747c477133cc2032693045e719c))
+* update the pulumi shell scripts ([32fe5d7](https://github.com/tyevco/homelab/commit/32fe5d7fac06bed6874b058654095115070d0fe0))
+
 ## [1.10.3](https://github.com/tyevco/homelab/compare/pulumi-v1.10.2...pulumi-v1.10.3) (2026-03-09)
 
 
