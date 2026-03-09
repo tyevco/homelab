@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.9.9](https://github.com/tyevco/homelab/compare/v1.9.8...v1.9.9) (2026-03-09)
+
+
+### Features
+
+* add Pulumi homelab provider to monorepo ([90a3059](https://github.com/tyevco/homelab/commit/90a3059c7e1dfc1aad09b5b4fda3b257a540d799))
+* add snapshot support to LXC cloning and integrate Pulumi provider ([13d7a6f](https://github.com/tyevco/homelab/commit/13d7a6fd3ff0d876a48f6fecbd64a7d8b7a1730d))
+* add snapshot support to LXC container cloning ([1431fbf](https://github.com/tyevco/homelab/commit/1431fbf544f8ce5bf30e30b458f2884bb6941d39))
+* **pulumi:** add snapshotName support to LxcContainer cloning ([1c6a88e](https://github.com/tyevco/homelab/commit/1c6a88e94c9c415ebe2382eaf99eee460300cb92))
+
+
+### Bug Fixes
+
+* exclude pulumi/ from root ESLint ([dec1e63](https://github.com/tyevco/homelab/commit/dec1e6313361c2e52e7b27b776161bd8a14c790e))
+* remove directory placeholder before writing extra file (EISDIR) ([beb6ad0](https://github.com/tyevco/homelab/commit/beb6ad0da4686f8e3132f8b05fd1299371714bf5))
+* remove directory placeholder before writing extra file (EISDIR) ([32f057e](https://github.com/tyevco/homelab/commit/32f057e8b91769de789de337ed2231f62c8e9e4b))
+
 ## [1.9.8](https://github.com/tyevco/homelab/compare/v1.9.7...v1.9.8) (2026-03-09)
 
 
