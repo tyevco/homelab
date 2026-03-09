@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 
 const PLUGIN_VERSION: string = require("./package.json").version;
-const PLUGIN_DOWNLOAD_URL = "github://api.github.com/tyevco/pulumi-homelab";
+const PLUGIN_DOWNLOAD_URL = "https://github.com/tyevco/homelab/releases/download/pulumi-v${VERSION}";
 
 export interface TraefikRouteArgs {
   /** The route name (maps to filename: name -> configs/name.yml). Must match ^[a-z0-9_-]+$. */
