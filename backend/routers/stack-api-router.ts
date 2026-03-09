@@ -9,6 +9,7 @@ import { log } from "../log";
 import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
 import fs from "fs";
 import { Agent } from "../models/agent";
+import { ExtraFile } from "../stack";
 
 const STACK_NAME_REGEX = /^[a-z0-9_-]+$/;
 
@@ -28,6 +29,7 @@ export interface StackInfo {
     composeYaml: string;
     envFile: string;
     composeOverride: string;
+    extraFiles: ExtraFile[];
     autostart: boolean;
     displayName: string;
     containers: ContainerInfo[];
@@ -97,6 +99,7 @@ async function stackToInfo(stack: Stack): Promise<StackInfo> {
         composeYaml: stack.composeYAML,
         envFile: stack.composeENV,
         composeOverride: stack.composeOverride,
+        extraFiles: stack.extraFiles,
         autostart: false,
         displayName: "",
         containers,
@@ -180,11 +183,12 @@ export class StackApiRouter extends Router {
         // POST /api/stacks - Create stack
         router.post("/api/stacks", async (req: Request, res: Response) => {
             try {
-                const { name, composeYaml, envFile, composeOverride, start } = req.body as {
+                const { name, composeYaml, envFile, composeOverride, extraFiles, start } = req.body as {
                     name?: string;
                     composeYaml?: string;
                     envFile?: string;
                     composeOverride?: string;
+                    extraFiles?: ExtraFile[];
                     start?: boolean;
                 };
 
@@ -198,7 +202,7 @@ export class StackApiRouter extends Router {
                     return;
                 }
 
-                const stack = new Stack(server, name, composeYaml, envFile || "", false, composeOverride ?? "");
+                const stack = new Stack(server, name, composeYaml, envFile || "", false, composeOverride ?? "", Array.isArray(extraFiles) ? extraFiles : []);
                 await stack.save(true);
 
                 if (start !== false) {
@@ -231,10 +235,11 @@ export class StackApiRouter extends Router {
         router.put("/api/stacks/:name", async (req: Request, res: Response) => {
             try {
                 const { name } = req.params;
-                const { composeYaml, envFile, composeOverride } = req.body as {
+                const { composeYaml, envFile, composeOverride, extraFiles } = req.body as {
                     composeYaml?: string;
                     envFile?: string;
                     composeOverride?: string;
+                    extraFiles?: ExtraFile[];
                 };
 
                 if (!STACK_NAME_REGEX.test(name)) {
@@ -254,7 +259,7 @@ export class StackApiRouter extends Router {
                 const wasRunning = stack.status === RUNNING;
 
                 // Create a new Stack instance with updated content to save
-                const updatedStack = new Stack(server, name, composeYaml ?? stack.composeYAML, envFile ?? stack.composeENV, false, composeOverride ?? stack.composeOverride);
+                const updatedStack = new Stack(server, name, composeYaml ?? stack.composeYAML, envFile ?? stack.composeENV, false, composeOverride ?? stack.composeOverride, Array.isArray(extraFiles) ? extraFiles : stack.extraFiles);
                 await updatedStack.save(false);
 
                 if (wasRunning) {
