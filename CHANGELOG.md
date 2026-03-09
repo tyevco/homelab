@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.9.6](https://github.com/tyevco/homelab/compare/v1.9.5...v1.9.6) (2026-03-09)
+
+
+### Features
+
+* add copy button and right-click copy to terminal component ([b3df509](https://github.com/tyevco/homelab/commit/b3df5096492db13d48ce78d03312b7e84a6ef506))
+* add LXC clone and initial config support ([ec15865](https://github.com/tyevco/homelab/commit/ec15865fb7ae87121fe9087fa00f443d0bfa6d25))
+* LXC clone/initial-config + terminal copy button ([05f2ee0](https://github.com/tyevco/homelab/commit/05f2ee0a06847b8be1292a7154ca09eb7a7a7d10))
+
+
+### Bug Fixes
+
+* add missing lock file ([157c614](https://github.com/tyevco/homelab/commit/157c614e4c31dc9633b1946b30fe545d93287640))
+* add missing lock file ([94cbc5d](https://github.com/tyevco/homelab/commit/94cbc5dd390b71685590ae3141d989ba384bb9c9))
+
 ## [1.9.5](https://github.com/tyevco/homelab/compare/v1.9.4...v1.9.5) (2026-03-09)
 
 
