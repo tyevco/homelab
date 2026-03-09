@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.13](https://github.com/tyevco/homelab/compare/v1.9.12...v1.9.13) (2026-03-09)
+
+
+### Bug Fixes
+
+* **pulumi:** correct package-lock.json name to match package.json ([1899806](https://github.com/tyevco/homelab/commit/18998069fa0a5200a0a49a5f213320357624fe30))
+* **pulumi:** correct package-lock.json package name ([43d362f](https://github.com/tyevco/homelab/commit/43d362f558dacad85eddaef0f966bd1ade4f8e95))
+
 ## [1.9.12](https://github.com/tyevco/homelab/compare/v1.9.11...v1.9.12) (2026-03-09)
 
 
