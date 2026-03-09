@@ -20,6 +20,19 @@ import { InteractiveTerminal, Terminal } from "./terminal";
 import childProcessAsync from "promisify-child-process";
 import { Settings } from "./settings";
 
+export interface ExtraFile {
+    name: string;
+    content: string;
+}
+
+const RESERVED_STACK_FILES = new Set([
+    ".env",
+    ...acceptedComposeFileNames,
+    ...acceptedComposeOverrideFileNames,
+]);
+
+const EXTRA_FILE_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+
 export class Stack {
 
     name: string;
@@ -27,6 +40,7 @@ export class Stack {
     protected _composeYAML?: string;
     protected _composeENV?: string;
     protected _composeOverride?: string;
+    protected _extraFiles?: ExtraFile[];
     protected _composeOverrideFileName: string = "docker-compose.override.yml";
     protected _configFilePath?: string;
     protected _composeFileName: string = "compose.yaml";
@@ -36,12 +50,13 @@ export class Stack {
 
     protected static managedStackList: Map<string, Stack> = new Map();
 
-    constructor(server : HomelabServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverride? : string) {
+    constructor(server : HomelabServer, name : string, composeYAML? : string, composeENV? : string, skipFSOperations = false, composeOverride? : string, extraFiles? : ExtraFile[]) {
         this.name = name;
         this.server = server;
         this._composeYAML = composeYAML;
         this._composeENV = composeENV;
         this._composeOverride = composeOverride;
+        this._extraFiles = extraFiles;
 
         if (!skipFSOperations) {
             // Check if compose file name is different from compose.yaml
@@ -84,6 +99,7 @@ export class Stack {
             ...obj,
             composeYAML: this.composeYAML,
             composeENV: this.composeENV,
+            extraFiles: this.extraFiles,
             primaryHostname,
         };
     }
@@ -192,6 +208,28 @@ export class Stack {
         return this._composeOverride;
     }
 
+    get extraFiles() : ExtraFile[] {
+        if (this._extraFiles !== undefined) {
+            return this._extraFiles;
+        }
+        try {
+            const entries = fs.readdirSync(this.path, { withFileTypes: true });
+            return entries
+                .filter(e => e.isFile() && !RESERVED_STACK_FILES.has(e.name) && !e.name.startsWith("."))
+                .map(e => {
+                    try {
+                        return { name: e.name,
+                            content: fs.readFileSync(path.join(this.path, e.name), "utf-8") };
+                    } catch {
+                        return { name: e.name,
+                            content: "" };
+                    }
+                });
+        } catch {
+            return [];
+        }
+    }
+
     get path() : string {
         return path.join(this.server.stacksDir, this.name);
     }
@@ -258,6 +296,31 @@ export class Stack {
                         await fsAsync.rm(p, { force: true });
                     }
                 }
+            }
+        }
+
+        if (this._extraFiles !== undefined) {
+            const newNames = new Set<string>();
+            for (const file of this._extraFiles) {
+                if (!file.name || !EXTRA_FILE_NAME_REGEX.test(file.name)) {
+                    throw new ValidationError(`Invalid extra file name: "${file.name}". Use only letters, numbers, dots, dashes, underscores.`);
+                }
+                if (RESERVED_STACK_FILES.has(file.name)) {
+                    throw new ValidationError(`"${file.name}" is a reserved filename and cannot be used as an extra file.`);
+                }
+                await fsAsync.writeFile(path.join(dir, file.name), file.content);
+                newNames.add(file.name);
+            }
+            // Remove extra files that were deleted from the list
+            try {
+                const entries = await fsAsync.readdir(dir, { withFileTypes: true });
+                for (const entry of entries) {
+                    if (entry.isFile() && !RESERVED_STACK_FILES.has(entry.name) && !entry.name.startsWith(".") && !newNames.has(entry.name)) {
+                        await fsAsync.rm(path.join(dir, entry.name), { force: true });
+                    }
+                }
+            } catch {
+                // ignore readdir failure
             }
         }
     }
