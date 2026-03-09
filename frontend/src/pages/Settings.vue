@@ -83,6 +83,9 @@ export default {
                 security: {
                     title: this.$t("Security"),
                 },
+                notifications: {
+                    title: this.$t("Notifications"),
+                },
                 apiTokens: {
                     title: this.$t("apiTokens"),
                 },
