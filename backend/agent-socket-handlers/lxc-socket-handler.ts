@@ -230,9 +230,13 @@ export class LxcSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("cloneLxcContainer", async (sourceName: unknown, destName: unknown, initialConfig: unknown, callback) => {
-            // Handle optional initialConfig — if 3rd arg is a function, it's the callback
-            if (typeof initialConfig === "function") {
+        agentSocket.on("cloneLxcContainer", async (sourceName: unknown, destName: unknown, snapshotName: unknown, initialConfig: unknown, callback) => {
+            // Optional args: snapshotName and initialConfig may be omitted
+            if (typeof snapshotName === "function") {
+                callback = snapshotName;
+                snapshotName = undefined;
+                initialConfig = undefined;
+            } else if (typeof initialConfig === "function") {
                 callback = initialConfig;
                 initialConfig = undefined;
             }
@@ -246,13 +250,33 @@ export class LxcSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Destination container name must be a string");
                 }
 
-                await LxcContainer.clone(server, socket, sourceName, destName, typeof initialConfig === "string" ? initialConfig : undefined);
+                await LxcContainer.clone(
+                    server, socket, sourceName, destName,
+                    typeof snapshotName === "string" ? snapshotName : undefined,
+                    typeof initialConfig === "string" ? initialConfig : undefined,
+                );
                 server.sendLxcContainerList();
                 callbackResult({
                     ok: true,
                     msg: "Cloned",
                     msgi18n: true,
                 }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("getLxcSnapshots", async (containerName: unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof containerName !== "string") {
+                    throw new ValidationError("Container name must be a string");
+                }
+
+                const snapshots = await LxcContainer.listSnapshots(server, containerName);
+                callbackResult({ ok: true,
+                    snapshots }, callback);
             } catch (e) {
                 callbackError(e, callback);
             }

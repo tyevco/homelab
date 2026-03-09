@@ -287,16 +287,27 @@ async function dispatch(socket: Socket, endpoint: string, eventName: string, arg
             }
 
             case "cloneLxcContainer": {
-                const [ sourceName, destName, initialConfig ] = args as [string, string, string | undefined];
+                const [ sourceName, destName, snapshotName, initialConfig ] = args as [string, string, string | undefined, string | undefined];
                 if (typeof sourceName !== "string") {
                     throw new Error("Source name must be a string");
                 }
                 if (typeof destName !== "string") {
                     throw new Error("Destination name must be a string");
                 }
-                await lxc.cloneContainer(socket, endpoint, sourceName, destName, initialConfig || undefined);
+                await lxc.cloneContainer(socket, endpoint, sourceName, destName, snapshotName || undefined, initialConfig || undefined);
                 await pushList();
                 ok("Cloned");
+                break;
+            }
+
+            case "getLxcSnapshots": {
+                const [ containerName ] = args as [string];
+                if (typeof containerName !== "string") {
+                    throw new Error("Container name must be a string");
+                }
+                const snapshots = await lxc.listSnapshots(containerName);
+                callback?.({ ok: true,
+                    snapshots });
                 break;
             }
 
