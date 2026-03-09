@@ -1,17 +1,21 @@
 import { AgentSocketHandler } from "../agent-socket-handler";
 import { HomelabServer } from "../homelab-server";
 import { callbackError, callbackResult, checkLogin, HomelabSocket, ValidationError } from "../util-server";
-import { Stack } from "../stack";
+import { Stack, ExtraFile } from "../stack";
 import { AgentSocket } from "../../common/agent-socket";
 
 export class DockerSocketHandler extends AgentSocketHandler {
     create(socket : HomelabSocket, server : HomelabServer, agentSocket : AgentSocket) {
         // Do not call super.create()
 
-        agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
+        agentSocket.on("deployStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, extraFiles : unknown, callback) => {
+            if (typeof extraFiles === "function") {
+                callback = extraFiles;
+                extraFiles = undefined;
+            }
             try {
                 checkLogin(socket);
-                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd);
+                const stack = await this.saveStack(server, name, composeYAML, composeENV, isAdd, extraFiles);
                 await stack.deploy(socket);
                 server.sendStackList();
                 callbackResult({
@@ -25,10 +29,14 @@ export class DockerSocketHandler extends AgentSocketHandler {
             }
         });
 
-        agentSocket.on("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, callback) => {
+        agentSocket.on("saveStack", async (name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, extraFiles : unknown, callback) => {
+            if (typeof extraFiles === "function") {
+                callback = extraFiles;
+                extraFiles = undefined;
+            }
             try {
                 checkLogin(socket);
-                await this.saveStack(server, name, composeYAML, composeENV, isAdd);
+                await this.saveStack(server, name, composeYAML, composeENV, isAdd, extraFiles);
                 callbackResult({
                     ok: true,
                     msg: "Saved",
@@ -253,7 +261,7 @@ export class DockerSocketHandler extends AgentSocketHandler {
         });
     }
 
-    async saveStack(server : HomelabServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown) : Promise<Stack> {
+    async saveStack(server : HomelabServer, name : unknown, composeYAML : unknown, composeENV : unknown, isAdd : unknown, extraFiles : unknown) : Promise<Stack> {
         // Check types
         if (typeof(name) !== "string") {
             throw new ValidationError("Name must be a string");
@@ -268,7 +276,12 @@ export class DockerSocketHandler extends AgentSocketHandler {
             throw new ValidationError("isAdd must be a boolean");
         }
 
-        const stack = new Stack(server, name, composeYAML, composeENV, false);
+        let parsedExtraFiles: ExtraFile[] | undefined;
+        if (Array.isArray(extraFiles)) {
+            parsedExtraFiles = (extraFiles as ExtraFile[]).filter(f => f && typeof f.name === "string" && typeof f.content === "string");
+        }
+
+        const stack = new Stack(server, name, composeYAML, composeENV, false, undefined, parsedExtraFiles);
         await stack.save(isAdd);
         return stack;
     }

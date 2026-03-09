@@ -204,6 +204,56 @@
                         </div>
                     </div>
 
+                    <!-- Extra Files -->
+                    <div v-if="isEditMode">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="mb-0">{{ $t("extraFiles") }}</h4>
+                            <button class="btn btn-sm btn-outline-primary" @click="addExtraFile">
+                                <font-awesome-icon icon="plus" class="me-1" />{{ $t("addFile") }}
+                            </button>
+                        </div>
+                        <div v-for="(file, index) in (stack.extraFiles || [])" :key="index" class="mb-3">
+                            <div class="d-flex align-items-center mb-1 gap-2">
+                                <input v-model="file.name" type="text" class="form-control form-control-sm font-monospace" :placeholder="$t('extraFileName')" style="max-width: 220px;" />
+                                <button class="btn btn-sm btn-outline-danger ms-auto" @click="removeExtraFile(index)">
+                                    <font-awesome-icon icon="trash" />
+                                </button>
+                            </div>
+                            <div class="shadow-box mb-1 editor-box edit-mode">
+                                <code-mirror
+                                    v-model="file.content"
+                                    :extensions="extensionsForFile(file.name)"
+                                    minimal
+                                    wrap="true"
+                                    dark="true"
+                                    tab="true"
+                                />
+                            </div>
+                        </div>
+                        <div v-if="!stack.extraFiles || stack.extraFiles.length === 0" class="text-muted small mb-3">
+                            {{ $t("noExtraFiles") }}
+                        </div>
+                    </div>
+
+                    <!-- Extra Files view mode -->
+                    <div v-if="!isEditMode && stack.extraFiles && stack.extraFiles.length > 0">
+                        <h4 class="mb-3">{{ $t("extraFiles") }}</h4>
+                        <div v-for="(file, index) in stack.extraFiles" :key="index" class="mb-3">
+                            <h6 class="mb-1 font-monospace">{{ file.name }}</h6>
+                            <div class="shadow-box mb-1 editor-box">
+                                <code-mirror
+                                    v-model="file.content"
+                                    :extensions="extensionsForFile(file.name)"
+                                    minimal
+                                    wrap="true"
+                                    dark="true"
+                                    tab="true"
+                                    :disabled="true"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-if="isEditMode">
                         <!-- Volumes -->
                         <div v-if="false">
@@ -314,8 +364,15 @@ export default {
             EditorView.focusChangeEffect.of(focusEffectHandler)
         ];
 
+        const extensionsPlain = [
+            editorTheme,
+            lineNumbers(),
+            EditorView.focusChangeEffect.of(focusEffectHandler)
+        ];
+
         return { extensions,
             extensionsEnv,
+            extensionsPlain,
             editorFocus };
     },
     yamlDoc: null,  // For keeping the yaml comments
@@ -606,7 +663,7 @@ export default {
 
             this.bindTerminal();
 
-            this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, (res) => {
+            this.$root.emitAgent(this.stack.endpoint, "deployStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.extraFiles || [], (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
 
@@ -620,7 +677,7 @@ export default {
         saveStack() {
             this.processing = true;
 
-            this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, (res) => {
+            this.$root.emitAgent(this.stack.endpoint, "saveStack", this.stack.name, this.stack.composeYAML, this.stack.composeENV, this.isAdd, this.stack.extraFiles || [], (res) => {
                 this.processing = false;
                 this.$root.toastRes(res);
 
@@ -775,6 +832,35 @@ export default {
 
         stackNameToLowercase() {
             this.stack.name = this.stack?.name?.toLowerCase();
+        },
+
+        extensionsForFile(filename) {
+            const ext = (filename || "").split(".").pop().toLowerCase();
+            switch (ext) {
+                case "yaml":
+                case "yml":
+                    return this.extensions;
+                case "env":
+                case "conf":
+                case "ini":
+                case "properties":
+                case "toml":
+                    return this.extensionsEnv;
+                default:
+                    return this.extensionsPlain;
+            }
+        },
+
+        addExtraFile() {
+            if (!this.stack.extraFiles) {
+                this.stack.extraFiles = [];
+            }
+            this.stack.extraFiles.push({ name: "",
+                content: "" });
+        },
+
+        removeExtraFile(index) {
+            this.stack.extraFiles.splice(index, 1);
         },
 
     }
