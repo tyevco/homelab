@@ -3,6 +3,7 @@ import composerize from "composerize";
 import { SocketHandler } from "../socket-handler.js";
 import { HomelabServer } from "../homelab-server";
 import { log } from "../log";
+import { NotificationService } from "../notification-service";
 import { R } from "redbean-node";
 import { loginRateLimiter } from "../rate-limiter";
 import { generatePasswordHash, needRehashPassword, shake256, SHAKE256_LENGTH, verifyPassword } from "../password-hash";
@@ -349,6 +350,78 @@ export class MainSocketHandler extends SocketHandler {
                 callback({
                     ok: true,
                     msg: "Saved",
+                });
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Get notification settings
+        socket.on("getNotificationSettings", async (callback) => {
+            try {
+                checkLogin(socket);
+                const data = await Settings.getSettings("notifications");
+                callback({
+                    ok: true,
+                    data,
+                });
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Save notification settings
+        socket.on("saveNotificationSettings", async (data, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof data !== "object" || data === null) {
+                    throw new ValidationError("Invalid notification settings data");
+                }
+
+                await Settings.setSettings("notifications", data);
+
+                callback({
+                    ok: true,
+                    msg: "Saved",
+                });
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        // Send test notification
+        socket.on("testNotification", async (provider : unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof provider !== "string") {
+                    throw new ValidationError("Provider must be a string");
+                }
+
+                const settings = await Settings.getSettings("notifications");
+                const testMsg = "This is a test notification from Homelab!";
+
+                if (provider === "ntfy" && settings.ntfyUrl) {
+                    await NotificationService.sendToNtfy({ ntfyEnabled: true,
+                        ntfyUrl: settings.ntfyUrl as string }, testMsg);
+                } else if (provider === "discord" && settings.discordWebhookUrl) {
+                    await NotificationService.sendToDiscord({ discordEnabled: true,
+                        discordWebhookUrl: settings.discordWebhookUrl as string }, testMsg);
+                } else if (provider === "gotify" && settings.gotifyUrl && settings.gotifyToken) {
+                    await NotificationService.sendToGotify({ gotifyEnabled: true,
+                        gotifyUrl: settings.gotifyUrl as string,
+                        gotifyToken: settings.gotifyToken as string }, testMsg);
+                } else if (provider === "webhook" && settings.webhookUrl) {
+                    await NotificationService.sendToWebhook({ webhookEnabled: true,
+                        webhookUrl: settings.webhookUrl as string }, testMsg);
+                } else {
+                    throw new ValidationError("Provider not configured or unknown: " + provider);
+                }
+
+                callback({
+                    ok: true,
+                    msg: "Test notification sent",
                 });
             } catch (e) {
                 callbackError(e, callback);

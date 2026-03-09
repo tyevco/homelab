@@ -7,6 +7,7 @@ import semver from "semver";
 import { R } from "redbean-node";
 import dayjs, { Dayjs } from "dayjs";
 import { encryptPassword, decryptPassword } from "./password-hash";
+import { NotificationService } from "./notification-service";
 
 /**
  * Homelab Instance Manager
@@ -179,6 +180,10 @@ export class AgentManager {
                 endpoint: endpoint,
                 status: "offline",
             });
+            delete this.agentCapabilities[endpoint];
+            NotificationService.send("agent_offline", `Agent ${endpoint} disconnected`).catch((e) => {
+                log.warn("agent-manager", "Notification send failed: " + e.message);
+            });
         });
 
         client.on("agent", (...args : unknown[]) => {
@@ -196,10 +201,19 @@ export class AgentManager {
         client.on("info", (res) => {
             log.debug("agent-manager", res);
 
+            const wasConnected = endpoint in this.agentCapabilities;
+
             this.agentCapabilities[endpoint] = {
                 lxcAvailable: !!res.lxcAvailable,
+                unraidAvailable: !!res.unraidAvailable,
                 version: res.version ?? null,
             };
+
+            if (!wasConnected) {
+                NotificationService.send("agent_online", `Agent ${endpoint} connected`).catch((e) => {
+                    log.warn("agent-manager", "Notification send failed: " + e.message);
+                });
+            }
 
             // Push updated capabilities to the frontend
             this.sendAgentList(this.selfCapabilities);

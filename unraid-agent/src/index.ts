@@ -1,0 +1,40 @@
+import { createAgentServer } from "./server";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pkg = require("../package.json") as { version: string };
+
+const port = parseInt(process.env.HOMELAB_AGENT_PORT ?? "5003", 10);
+const hostname = process.env.HOMELAB_AGENT_HOSTNAME ?? "0.0.0.0";
+const username = process.env.HOMELAB_AGENT_USERNAME ?? "admin";
+const password = process.env.HOMELAB_AGENT_PASSWORD ?? "";
+const scanInterval = parseInt(process.env.HOMELAB_AGENT_SCAN_INTERVAL ?? "60", 10);
+
+if (!password) {
+    console.error("Error: HOMELAB_AGENT_PASSWORD is required.");
+    console.error("");
+    console.error("Set it via environment variable:");
+    console.error("  HOMELAB_AGENT_PASSWORD=secret homelab-unraid-agent");
+    console.error("");
+    console.error("Optional variables:");
+    console.error("  HOMELAB_AGENT_PORT           (default: 5003)");
+    console.error("  HOMELAB_AGENT_HOSTNAME       (default: 0.0.0.0)");
+    console.error("  HOMELAB_AGENT_USERNAME       (default: admin)");
+    console.error("  HOMELAB_AGENT_SCAN_INTERVAL  (default: 60, seconds)");
+    process.exit(1);
+}
+
+const { httpServer } = createAgentServer({ username,
+    password,
+    version: pkg.version,
+    scanInterval });
+
+httpServer.listen(port, hostname, () => {
+    console.log(`Homelab Unraid Agent v${pkg.version}`);
+    console.log(`Listening on ${hostname}:${port}`);
+    console.log(`Username: ${username}`);
+    console.log(`Capability scan interval: ${scanInterval}s`);
+    console.log("");
+    console.log("Add this agent in the Homelab UI:");
+    console.log(`  URL: http://<this-host>:${port}`);
+    console.log(`  Username: ${username}`);
+});

@@ -28,6 +28,7 @@ import { Bean } from "redbean-node/dist/bean";
 import { Arguments, Config, HomelabSocket } from "./util-server";
 import { DockerSocketHandler } from "./agent-socket-handlers/docker-socket-handler";
 import { LxcSocketHandler } from "./agent-socket-handlers/lxc-socket-handler";
+import { UnraidSocketHandler } from "./agent-socket-handlers/unraid-socket-handler";
 import { LxcContainer } from "./lxc-container";
 import expressStaticGzip from "express-static-gzip";
 import path from "path";
@@ -84,6 +85,7 @@ export class HomelabServer {
         new DockerSocketHandler(),
         new TerminalSocketHandler(),
         new LxcSocketHandler(),
+        new UnraidSocketHandler(),
     ];
 
     /**
@@ -447,9 +449,11 @@ export class HomelabServer {
             this.serverAgentManager!.connectAll().catch((e) => log.error("server", e));
 
             // Run every 10 seconds
+            let cronTick = 0;
             Cron("*/10 * * * * *", {
                 protect: true,  // Enabled over-run protection.
             }, async () => {
+                cronTick++;
                 try {
                     await this.sendStackList(true);
                     if (this.lxcAvailable) {
@@ -460,6 +464,10 @@ export class HomelabServer {
                         const hlSocket = socket as HomelabSocket;
                         if (hlSocket.userID) {
                             hlSocket.instanceManager.emitToAllEndpoints("requestLxcContainerList");
+                            // Poll Unraid status every 60s (every 6th 10s tick)
+                            if (cronTick % 6 === 0) {
+                                hlSocket.instanceManager.emitToAllEndpoints("requestUnraidStatus");
+                            }
                         }
                     }
                 } catch (e) {

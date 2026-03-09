@@ -96,7 +96,7 @@ async function stackToInfo(stack: Stack): Promise<StackInfo> {
         status: statusNumberToString(stack.status),
         composeYaml: stack.composeYAML,
         envFile: stack.composeENV,
-        composeOverride: "",
+        composeOverride: stack.composeOverride,
         autostart: false,
         displayName: "",
         containers,
@@ -180,10 +180,11 @@ export class StackApiRouter extends Router {
         // POST /api/stacks - Create stack
         router.post("/api/stacks", async (req: Request, res: Response) => {
             try {
-                const { name, composeYaml, envFile, start } = req.body as {
+                const { name, composeYaml, envFile, composeOverride, start } = req.body as {
                     name?: string;
                     composeYaml?: string;
                     envFile?: string;
+                    composeOverride?: string;
                     start?: boolean;
                 };
 
@@ -197,7 +198,7 @@ export class StackApiRouter extends Router {
                     return;
                 }
 
-                const stack = new Stack(server, name, composeYaml, envFile || "");
+                const stack = new Stack(server, name, composeYaml, envFile || "", false, composeOverride ?? "");
                 await stack.save(true);
 
                 if (start !== false) {
@@ -230,9 +231,10 @@ export class StackApiRouter extends Router {
         router.put("/api/stacks/:name", async (req: Request, res: Response) => {
             try {
                 const { name } = req.params;
-                const { composeYaml, envFile } = req.body as {
+                const { composeYaml, envFile, composeOverride } = req.body as {
                     composeYaml?: string;
                     envFile?: string;
+                    composeOverride?: string;
                 };
 
                 if (!STACK_NAME_REGEX.test(name)) {
@@ -252,7 +254,7 @@ export class StackApiRouter extends Router {
                 const wasRunning = stack.status === RUNNING;
 
                 // Create a new Stack instance with updated content to save
-                const updatedStack = new Stack(server, name, composeYaml ?? stack.composeYAML, envFile ?? stack.composeENV);
+                const updatedStack = new Stack(server, name, composeYaml ?? stack.composeYAML, envFile ?? stack.composeENV, false, composeOverride ?? stack.composeOverride);
                 await updatedStack.save(false);
 
                 if (wasRunning) {

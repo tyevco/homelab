@@ -1,0 +1,32 @@
+{
+    "name": "@tyevco/homelab-unraid-agent",
+    "version": "1.0.0",
+    "description": "Lightweight Unraid agent for Homelab",
+    "bin": {
+        "homelab-unraid-agent": "bin/homelab-unraid-agent.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "prepare": "tsc",
+        "start": "node dist/index.js",
+        "dev": "ts-node src/index.ts"
+    },
+    "files": [
+        "dist/",
+        "bin/"
+    ],
+    "dependencies": {
+        "ini": "^4.1.3",
+        "promisify-child-process": "^4.1.2",
+        "socket.io": "~4.8.1"
+    },
+    "devDependencies": {
+        "@types/ini": "^4.1.1",
+        "@types/node": "^20.0.0",
+        "ts-node": "^10.9.1",
+        "typescript": "~5.2.2"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}

@@ -15,9 +15,11 @@ const Settings = () => import("./pages/Settings.vue");
 import Appearance from "./components/settings/Appearance.vue";
 import General from "./components/settings/General.vue";
 const Security = () => import("./components/settings/Security.vue");
+const Notifications = () => import("./components/settings/Notifications.vue");
 const GlobalEnv = () => import("./components/settings/GlobalEnv.vue");
 const ApiTokens = () => import("./components/settings/ApiTokens.vue");
 import About from "./components/settings/About.vue";
+import Unraid from "./pages/Unraid.vue";
 
 const routes = [
     {
@@ -48,6 +50,10 @@ const routes = [
                             {
                                 path: "/lxc",
                                 component: LxcContainer,
+                            },
+                            {
+                                path: "/unraid",
+                                component: Unraid,
                             },
                             {
                                 path: "/lxc/:containerName",
@@ -92,6 +98,10 @@ const routes = [
                             {
                                 path: "security",
                                 component: Security,
+                            },
+                            {
+                                path: "notifications",
+                                component: Notifications,
                             },
                             {
                                 path: "globalEnv",
