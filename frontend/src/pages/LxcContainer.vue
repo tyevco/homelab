@@ -84,31 +84,56 @@
                         <h4 class="mb-3">{{ $t("general") }}</h4>
                         <div class="shadow-box big-padding mb-3">
                             <div class="mb-3">
+                                <label class="form-label">{{ $t("lxcCreateMode") }}</label>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn" :class="createMode === 'download' ? 'btn-primary' : 'btn-outline-secondary'" @click="createMode = 'download'">
+                                        {{ $t("lxcCreateModeDownload") }}
+                                    </button>
+                                    <button type="button" class="btn" :class="createMode === 'clone' ? 'btn-primary' : 'btn-outline-secondary'" @click="createMode = 'clone'">
+                                        {{ $t("lxcCreateModeClone") }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="lxc-name" class="form-label">{{ $t("lxcContainerName") }}</label>
                                 <input id="lxc-name" v-model="container.name" type="text" class="form-control" required @blur="containerNameToLowercase">
                                 <div class="form-text">{{ $t("Lowercase only") }}</div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="lxc-dist" class="form-label">{{ $t("lxcDistribution") }}</label>
-                                <select id="lxc-dist" v-model="selectedDist" class="form-select" @change="onDistChange">
-                                    <option v-for="dist in uniqueDists" :key="dist" :value="dist">{{ dist }}</option>
-                                </select>
-                            </div>
+                            <!-- Download mode fields -->
+                            <template v-if="createMode === 'download'">
+                                <div class="mb-3">
+                                    <label for="lxc-dist" class="form-label">{{ $t("lxcDistribution") }}</label>
+                                    <select id="lxc-dist" v-model="selectedDist" class="form-select" @change="onDistChange">
+                                        <option v-for="dist in uniqueDists" :key="dist" :value="dist">{{ dist }}</option>
+                                    </select>
+                                </div>
 
-                            <div class="mb-3">
-                                <label for="lxc-release" class="form-label">{{ $t("lxcRelease") }}</label>
-                                <select id="lxc-release" v-model="selectedRelease" class="form-select" @change="onReleaseChange">
-                                    <option v-for="release in availableReleases" :key="release" :value="release">{{ release }}</option>
-                                </select>
-                            </div>
+                                <div class="mb-3">
+                                    <label for="lxc-release" class="form-label">{{ $t("lxcRelease") }}</label>
+                                    <select id="lxc-release" v-model="selectedRelease" class="form-select" @change="onReleaseChange">
+                                        <option v-for="release in availableReleases" :key="release" :value="release">{{ release }}</option>
+                                    </select>
+                                </div>
 
-                            <div class="mb-3">
-                                <label for="lxc-arch" class="form-label">{{ $t("lxcArchitecture") }}</label>
-                                <select id="lxc-arch" v-model="selectedArch" class="form-select">
-                                    <option v-for="arch in availableArchitectures" :key="arch" :value="arch">{{ arch }}</option>
-                                </select>
-                            </div>
+                                <div class="mb-3">
+                                    <label for="lxc-arch" class="form-label">{{ $t("lxcArchitecture") }}</label>
+                                    <select id="lxc-arch" v-model="selectedArch" class="form-select">
+                                        <option v-for="arch in availableArchitectures" :key="arch" :value="arch">{{ arch }}</option>
+                                    </select>
+                                </div>
+                            </template>
+
+                            <!-- Clone mode fields -->
+                            <template v-if="createMode === 'clone'">
+                                <div class="mb-3">
+                                    <label for="lxc-clone-source" class="form-label">{{ $t("lxcCloneSource") }}</label>
+                                    <select id="lxc-clone-source" v-model="cloneSource" class="form-select">
+                                        <option v-for="c in cloneableContainers" :key="c.name" :value="c.name">{{ c.name }}</option>
+                                    </select>
+                                </div>
+                            </template>
 
                             <div class="mb-3">
                                 <label for="lxc-endpoint" class="form-label">{{ $t("homelabAgent") }}</label>
@@ -117,6 +142,13 @@
                                         ({{ $root.agentStatusList[ep] }}) {{ (ep) ? ep : $t("currentEndpoint") }}
                                     </option>
                                 </select>
+                            </div>
+
+                            <!-- Initial config (both modes) -->
+                            <div class="mb-3">
+                                <label for="lxc-initial-config" class="form-label">{{ $t("lxcInitialConfig") }}</label>
+                                <textarea id="lxc-initial-config" v-model="initialConfig" class="form-control font-monospace" rows="5" :placeholder="lxcInitialConfigPlaceholder"></textarea>
+                                <div class="form-text">{{ $t("lxcInitialConfigHint") }}</div>
                             </div>
                         </div>
                     </div>
@@ -269,6 +301,9 @@ export default {
             selectedRelease: "",
             selectedArch: "amd64",
             originalConfig: "",
+            createMode: "download",
+            cloneSource: "",
+            initialConfig: "",
         };
     },
     computed: {
@@ -320,6 +355,16 @@ export default {
             } else {
                 return `/lxc/${this.container.name}`;
             }
+        },
+
+        cloneableContainers() {
+            const ep = this.container.endpoint;
+            return Object.values(this.$root.completeLxcContainerList)
+                .filter(c => c.endpoint === ep);
+        },
+
+        lxcInitialConfigPlaceholder() {
+            return "# Optional: lines appended to the container config after creation\n# Example for Docker-capable (privileged) container:\n# lxc.apparmor.profile = unconfined\n# lxc.cgroup.devices.allow = a\n# lxc.cap.drop =";
         },
 
         uniqueDists() {
@@ -408,14 +453,28 @@ export default {
             this.processing = true;
             this.bindTerminal();
 
-            this.$root.emitAgent(this.container.endpoint, "createLxcContainer", this.container.name, this.selectedDist, this.selectedRelease, this.selectedArch, (res) => {
-                this.processing = false;
-                this.$root.toastRes(res);
-
-                if (res.ok) {
-                    this.$router.push(this.url);
+            if (this.createMode === "clone") {
+                if (!this.cloneSource) {
+                    this.$root.toastError("Source container is required");
+                    this.processing = false;
+                    return;
                 }
-            });
+                this.$root.emitAgent(this.container.endpoint, "cloneLxcContainer", this.cloneSource, this.container.name, this.initialConfig || undefined, (res) => {
+                    this.processing = false;
+                    this.$root.toastRes(res);
+                    if (res.ok) {
+                        this.$router.push(this.url);
+                    }
+                });
+            } else {
+                this.$root.emitAgent(this.container.endpoint, "createLxcContainer", this.container.name, this.selectedDist, this.selectedRelease, this.selectedArch, this.initialConfig || undefined, (res) => {
+                    this.processing = false;
+                    this.$root.toastRes(res);
+                    if (res.ok) {
+                        this.$router.push(this.url);
+                    }
+                });
+            }
         },
 
         startContainer() {

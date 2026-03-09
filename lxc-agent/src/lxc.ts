@@ -259,6 +259,7 @@ export async function createContainer(
     dist: string,
     release: string,
     arch: string,
+    initialConfig?: string,
 ): Promise<void> {
     if (!/^[a-z0-9_.-]+$/.test(name)) {
         throw new Error("Invalid container name");
@@ -284,7 +285,48 @@ export async function createContainer(
     if (code !== 0) {
         throw new Error("Failed to create LXC container");
     }
+    if (initialConfig) {
+        await appendConfig(name, initialConfig);
+    }
     console.log(`[lxc] Created: ${name}`);
+}
+
+export async function cloneContainer(
+    socket: SocketLike,
+    endpoint: string,
+    sourceName: string,
+    destName: string,
+    initialConfig?: string,
+): Promise<void> {
+    if (!/^[a-z0-9_.-]+$/.test(sourceName)) {
+        throw new Error("Invalid source container name");
+    }
+    if (!/^[a-z0-9_.-]+$/.test(destName)) {
+        throw new Error("Invalid destination container name");
+    }
+
+    console.log(`[lxc] Cloning container: ${sourceName} → ${destName}`);
+    const code = await AgentTerminal.exec(
+        socket,
+        getLxcTerminalName(endpoint, destName),
+        "lxc-copy",
+        [ "-n", sourceName, "-N", destName ],
+        LXC_PATH,
+    );
+    if (code !== 0) {
+        throw new Error("Failed to clone LXC container");
+    }
+    if (initialConfig) {
+        await appendConfig(destName, initialConfig);
+    }
+    console.log(`[lxc] Cloned: ${sourceName} → ${destName}`);
+}
+
+async function appendConfig(name: string, extra: string): Promise<void> {
+    const configPath = path.join(LXC_PATH, name, "config");
+    const existing = await fs.promises.readFile(configPath, "utf-8").catch(() => "");
+    const separator = existing.endsWith("\n") ? "" : "\n";
+    await fs.promises.writeFile(configPath, existing + separator + "\n" + extra.trimEnd() + "\n");
 }
 
 export async function getDistributions(): Promise<object[]> {
