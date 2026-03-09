@@ -1,6 +1,6 @@
 {
   "name": "homelab",
-  "version": "1.9.12",
+  "version": "1.9.13",
   "type": "module",
   "engines": {
     "node": ">= 22.14.0"
