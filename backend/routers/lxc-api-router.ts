@@ -8,6 +8,7 @@ import childProcessAsync from "promisify-child-process";
 import { log } from "../log";
 import { apiRateLimiter, rateLimitMiddleware } from "../rate-limiter";
 import { Settings } from "../settings";
+import { HomelabSocket } from "../util-server";
 
 const CONTAINER_NAME_REGEX = /^[a-z0-9_.-]+$/;
 
@@ -138,6 +139,53 @@ export class LxcApiRouter extends Router {
                 log.error("lxc-api", e);
                 res.status(500).json({ ok: false,
                     msg: e instanceof Error ? e.message : "Internal server error" });
+            }
+        });
+
+        // POST /api/lxc/clone - Clone container
+        router.post("/api/lxc/clone", async (req: Request, res: Response) => {
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
+            try {
+                const { sourceName, destName, initialConfig } = req.body as { sourceName?: string; destName?: string; initialConfig?: string };
+
+                if (!sourceName || !CONTAINER_NAME_REGEX.test(sourceName)) {
+                    res.status(400).json({ ok: false,
+                        msg: "sourceName is required and must match ^[a-z0-9_.-]+$" });
+                    return;
+                }
+                if (!destName || !CONTAINER_NAME_REGEX.test(destName)) {
+                    res.status(400).json({ ok: false,
+                        msg: "destName is required and must match ^[a-z0-9_.-]+$" });
+                    return;
+                }
+
+                if (endpoint) {
+                    await callAgent(server, endpoint, "cloneLxcContainer", sourceName, destName, initialConfig);
+                    const result = await callAgent<{ container: object }>(server, endpoint, "getLxcContainer", destName);
+                    res.status(201).json({ ok: true,
+                        msg: "Container cloned",
+                        container: result.container });
+                    return;
+                }
+
+                const fakeSocket = { emit: () => {} } as unknown as HomelabSocket;
+                await LxcContainer.clone(server, fakeSocket, sourceName, destName, initialConfig);
+                await server.sendLxcContainerList();
+
+                try {
+                    const container = await LxcContainer.getContainer(server, destName);
+                    res.status(201).json({ ok: true,
+                        msg: "Container cloned",
+                        container: container.toJSON("") });
+                } catch {
+                    res.status(201).json({ ok: true,
+                        msg: "Container cloned",
+                        container: {} });
+                }
+            } catch (e) {
+                log.error("lxc-api", e);
+                res.status(500).json({ ok: false,
+                    msg: e instanceof Error ? e.message : "Failed to clone container" });
             }
         });
 
