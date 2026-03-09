@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.8](https://github.com/tyevco/homelab/compare/v1.9.7...v1.9.8) (2026-03-09)
+
+
+### Features
+
+* add LXC clone, notification settings, and Unraid VM REST endpoints ([d2ee203](https://github.com/tyevco/homelab/commit/d2ee203e3a19c8cbe6a3d90f6f3e1dff72658d60))
+* LXC clone, notification settings, and Unraid VM REST endpoints ([0e0e407](https://github.com/tyevco/homelab/commit/0e0e40725e6c4abcf3850a76a793e260fdee0fa2))
+
 ## [1.9.7](https://github.com/tyevco/homelab/compare/v1.9.6...v1.9.7) (2026-03-09)
 
 
