@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.15](https://github.com/tyevco/homelab/compare/v1.9.14...v1.9.15) (2026-03-09)
+
+
+### Bug Fixes
+
+* **pulumi:** add snapshotName to schema and fix PLUGIN_DOWNLOAD_URL in SDK ([130bb17](https://github.com/tyevco/homelab/commit/130bb172371ec4af5a78a62c2a4b7b660a98e86d))
+* **pulumi:** add snapshotName to schema and fix SDK plugin URL ([a7f8f09](https://github.com/tyevco/homelab/commit/a7f8f09893f9bf94656cd6fdea997d65ec13fad0))
+
 ## [1.9.14](https://github.com/tyevco/homelab/compare/v1.9.13...v1.9.14) (2026-03-09)
 
 
