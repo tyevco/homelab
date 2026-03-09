@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.10.0](https://github.com/tyevco/homelab/compare/pulumi-v1.9.9...pulumi-v1.10.0) (2026-03-09)
+
+
+### Features
+
+* add LXC snapshot cloning and Pulumi provider integration ([36d74a2](https://github.com/tyevco/homelab/commit/36d74a2572e258cf10e320b6c6e445234f690525))
+* add Pulumi homelab provider to monorepo ([90a3059](https://github.com/tyevco/homelab/commit/90a3059c7e1dfc1aad09b5b4fda3b257a540d799))
+* add snapshot support to LXC cloning and integrate Pulumi provider ([13d7a6f](https://github.com/tyevco/homelab/commit/13d7a6fd3ff0d876a48f6fecbd64a7d8b7a1730d))
+* **pulumi:** add snapshotName support to LxcContainer cloning ([1c6a88e](https://github.com/tyevco/homelab/commit/1c6a88e94c9c415ebe2382eaf99eee460300cb92))
+
 ## [0.6.0](https://github.com/tyevco/homelab/compare/pulumi-v0.5.0...pulumi-v0.6.0) (2026-03-09)
 
 
