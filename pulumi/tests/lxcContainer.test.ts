@@ -273,6 +273,7 @@ describe("lxcContainer create", () => {
     const props = response.getProperties().toJavaScript();
     expect(props.name).toBe("test");
     expect(props.status).toBe(0);
+    expect(props.stateText).toBe("unknown");
     expect(props.ip).toBe("");
     expect(homelabClient.createLxcContainer).not.toHaveBeenCalled();
   });
@@ -403,6 +404,7 @@ describe("lxcContainer read", () => {
     const props = response.getProperties().toJavaScript();
     expect(props.name).toBe("myct");
     expect(props.status).toBe(3);
+    expect(props.stateText).toBe("running");
     expect(props.ip).toBe("10.0.0.5");
     expect(props.dist).toBe("ubuntu");
     expect(props.release).toBe("jammy");

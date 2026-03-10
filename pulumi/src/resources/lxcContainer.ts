@@ -18,6 +18,15 @@ const emptyProto = require("google-protobuf/google/protobuf/empty_pb");
 const REPLACE_FIELDS = ["name", "dist", "release", "arch", "autostart", "sourceContainer", "snapshotName", "initialConfig"];
 const UPDATE_FIELDS = ["config"];
 
+function statusToStateText(status: number): string {
+  switch (status) {
+    case 3: return "running";
+    case 4: return "stopped";
+    case 5: return "frozen";
+    default: return "unknown";
+  }
+}
+
 function containerToOutputs(info: LxcContainerInfo, inputs: Record<string, any>): Record<string, any> {
   const out: Record<string, any> = {
     name: inputs.name,
@@ -27,6 +36,7 @@ function containerToOutputs(info: LxcContainerInfo, inputs: Record<string, any>)
     config: inputs.config !== undefined ? inputs.config : (info.config || ""),
     autostart: inputs.autostart !== undefined ? inputs.autostart : (info.autostart || false),
     status: info.status,
+    stateText: statusToStateText(info.status),
     ip: info.ip || "",
     pid: info.pid || 0,
     memory: info.memory || "",
@@ -143,6 +153,7 @@ export const lxcContainerResource = {
       response.setProperties(objectToStruct({
         ...inputs,
         status: 0,
+        stateText: "unknown",
         ip: "",
         pid: 0,
         memory: "",
@@ -194,6 +205,7 @@ export const lxcContainerResource = {
         config: info.config || "",
         autostart: info.autostart || false,
         status: info.status,
+        stateText: statusToStateText(info.status),
         ip: info.ip || "",
         pid: info.pid || 0,
         memory: info.memory || "",
@@ -250,6 +262,7 @@ export const lxcContainerResource = {
       response.setProperties(objectToStruct({
         ...inputs,
         status: olds.status || 0,
+        stateText: olds.stateText || "unknown",
         ip: olds.ip || "",
         pid: olds.pid || 0,
         memory: olds.memory || "",
