@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.9.16](https://github.com/tyevco/homelab/compare/v1.9.15...v1.9.16) (2026-03-10)
+
+
+### Features
+
+* add stateText output to LxcContainer for human-readable state ([5909ced](https://github.com/tyevco/homelab/commit/5909cede812c983f714a9399abe1f321afab2aa5))
+* **lxc:** add snapshot management support ([e765d7b](https://github.com/tyevco/homelab/commit/e765d7b394f753ba99e619c66073fcd3155f0243))
+
+
+### Bug Fixes
+
+* add @types/ini to resolve TS7016 error in unraid-agent ([634ed45](https://github.com/tyevco/homelab/commit/634ed4525ee211723fcf429cdbf2c02047af6d84))
+* address code quality issues found during analysis ([2f436af](https://github.com/tyevco/homelab/commit/2f436af0e7bddec10a801e291f539c5603ea3314))
+* address multiple bugs found during code analysis ([b695052](https://github.com/tyevco/homelab/commit/b695052018cad5a4906d265c463c4c02791acf8e))
+* address multiple code quality issues across codebase ([b955c1c](https://github.com/tyevco/homelab/commit/b955c1c8c24fa4a769478f4f69273643736bc433))
+* handle LXC container deletion when container already removed ([2fb7f11](https://github.com/tyevco/homelab/commit/2fb7f112c62f6459023ccafd9870da7fe54384ff))
+* **test:** dedupe socket.io resolution so vi.mock intercepts lxc-agent imports ([6facec2](https://github.com/tyevco/homelab/commit/6facec2d5fd7edcafe2413c86ec268938085acb9))
+
 ## [1.9.15](https://github.com/tyevco/homelab/compare/v1.9.14...v1.9.15) (2026-03-09)
 
 
