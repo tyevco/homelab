@@ -258,8 +258,17 @@ async function dispatch(socket: Socket, endpoint: string, eventName: string, arg
                 if (typeof name !== "string") {
                     throw new Error("Name must be a string");
                 }
-                const container = await lxc.getContainer(name, endpoint);
-                await lxc.deleteContainer(socket, endpoint, name, container.status);
+                try {
+                    const container = await lxc.getContainer(name, endpoint);
+                    await lxc.deleteContainer(socket, endpoint, name, container.status);
+                } catch (e) {
+                    // If the container is already gone, treat as success
+                    if (e instanceof Error && e.message.includes("not found")) {
+                        console.log(`[lxc] Container ${name} already removed, nothing to delete`);
+                    } else {
+                        throw e;
+                    }
+                }
                 await pushList();
                 ok("Destroyed");
                 break;
