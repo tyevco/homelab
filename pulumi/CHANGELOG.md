@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/tyevco/homelab/compare/pulumi-v1.10.5...pulumi-v1.11.0) (2026-03-10)
+
+
+### Features
+
+* add stateText output to LxcContainer for human-readable state ([5909ced](https://github.com/tyevco/homelab/commit/5909cede812c983f714a9399abe1f321afab2aa5))
+
 ## [1.10.5](https://github.com/tyevco/homelab/compare/pulumi-v1.10.4...pulumi-v1.10.5) (2026-03-09)
 
 
