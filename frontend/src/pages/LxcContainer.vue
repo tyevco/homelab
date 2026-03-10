@@ -184,6 +184,24 @@
                         </div>
                     </div>
 
+                    <!-- Snapshots -->
+                    <div v-if="!isAdd && !isEditMode" class="mb-3">
+                        <h4 class="mb-3">{{ $t("lxcSnapshots") }}</h4>
+                        <div class="shadow-box big-padding mb-2">
+                            <div v-if="snapshots.length === 0" class="text-muted mb-2">{{ $t("lxcSnapshotNone") }}</div>
+                            <div v-for="snap in snapshots" :key="snap" class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="font-monospace">{{ snap }}</span>
+                                <button class="btn btn-danger btn-sm ms-2" :disabled="processing" @click="confirmDeleteSnapshot(snap)">
+                                    <font-awesome-icon icon="trash" />
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-normal btn-sm" :disabled="processing" @click="takeSnapshot">
+                            <font-awesome-icon icon="camera" class="me-1" />
+                            {{ $t("lxcTakeSnapshot") }}
+                        </button>
+                    </div>
+
                     <!-- Interactive Terminal -->
                     <div v-if="!isAdd && active">
                         <h4 class="mb-3">{{ $t("terminal") }}</h4>
@@ -221,9 +239,14 @@
                 </div>
             </div>
 
-            <!-- Delete Dialog -->
+            <!-- Delete Container Dialog -->
             <BModal v-model="showDeleteDialog" :cancelTitle="$t('cancel')" :okTitle="$t('deleteLxcContainer')" okVariant="danger" @ok="deleteContainer">
                 {{ $t("deleteLxcContainerMsg") }}
+            </BModal>
+
+            <!-- Delete Snapshot Dialog -->
+            <BModal v-model="showDeleteSnapshotDialog" :cancelTitle="$t('cancel')" :okTitle="$t('lxcDeleteSnapshot')" okVariant="danger" @ok="deleteSnapshot">
+                {{ $t("lxcDeleteSnapshotMsg", { name: snapshotToDelete }) }}
             </BModal>
         </div>
     </transition>
@@ -303,6 +326,9 @@ export default {
             isEditMode: false,
             submitted: false,
             showDeleteDialog: false,
+            showDeleteSnapshotDialog: false,
+            snapshotToDelete: "",
+            snapshots: [],
             showExecTerminal: false,
             distributions: [],
             selectedDist: "",
@@ -456,10 +482,46 @@ export default {
                     this.container = res.container;
                     this.originalConfig = this.container.config;
                     this.bindTerminal();
+                    this.loadSnapshots();
                 } else {
                     this.$root.toastRes(res);
                 }
                 this.processing = false;
+            });
+        },
+
+        loadSnapshots() {
+            this.$root.emitAgent(this.endpoint, "getLxcSnapshots", this.container.name, (res) => {
+                if (res.ok) {
+                    this.snapshots = res.snapshots || [];
+                }
+            });
+        },
+
+        takeSnapshot() {
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "createLxcSnapshot", this.container.name, (res) => {
+                this.processing = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.loadSnapshots();
+                }
+            });
+        },
+
+        confirmDeleteSnapshot(snapName) {
+            this.snapshotToDelete = snapName;
+            this.showDeleteSnapshotDialog = true;
+        },
+
+        deleteSnapshot() {
+            this.processing = true;
+            this.$root.emitAgent(this.endpoint, "deleteLxcSnapshot", this.container.name, this.snapshotToDelete, (res) => {
+                this.processing = false;
+                this.$root.toastRes(res);
+                if (res.ok) {
+                    this.loadSnapshots();
+                }
             });
         },
 

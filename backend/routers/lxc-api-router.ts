@@ -146,7 +146,7 @@ export class LxcApiRouter extends Router {
         router.post("/api/lxc/clone", async (req: Request, res: Response) => {
             const endpoint = (res.locals.lxcEndpoint as string) || "";
             try {
-                const { sourceName, destName, initialConfig } = req.body as { sourceName?: string; destName?: string; initialConfig?: string };
+                const { sourceName, destName, snapshotName, initialConfig } = req.body as { sourceName?: string; destName?: string; snapshotName?: string; initialConfig?: string };
 
                 if (!sourceName || !CONTAINER_NAME_REGEX.test(sourceName)) {
                     res.status(400).json({ ok: false,
@@ -158,9 +158,14 @@ export class LxcApiRouter extends Router {
                         msg: "destName is required and must match ^[a-z0-9_.-]+$" });
                     return;
                 }
+                if (snapshotName && !CONTAINER_NAME_REGEX.test(snapshotName)) {
+                    res.status(400).json({ ok: false,
+                        msg: "snapshotName must match ^[a-z0-9_.-]+$" });
+                    return;
+                }
 
                 if (endpoint) {
-                    await callAgent(server, endpoint, "cloneLxcContainer", sourceName, destName, initialConfig);
+                    await callAgent(server, endpoint, "cloneLxcContainer", sourceName, destName, snapshotName, initialConfig);
                     const result = await callAgent<{ container: object }>(server, endpoint, "getLxcContainer", destName);
                     res.status(201).json({ ok: true,
                         msg: "Container cloned",
@@ -169,7 +174,7 @@ export class LxcApiRouter extends Router {
                 }
 
                 const fakeSocket = { emit: () => {} } as unknown as HomelabSocket;
-                await LxcContainer.clone(server, fakeSocket, sourceName, destName, initialConfig);
+                await LxcContainer.clone(server, fakeSocket, sourceName, destName, snapshotName, initialConfig);
                 await server.sendLxcContainerList();
 
                 try {
@@ -377,6 +382,91 @@ export class LxcApiRouter extends Router {
             }
         });
 
+        // GET /api/lxc/:name/snapshots - List snapshots
+        router.get("/api/lxc/:name/snapshots", async (req: Request, res: Response) => {
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
+            try {
+                const { name } = req.params;
+                if (!CONTAINER_NAME_REGEX.test(name)) {
+                    res.status(400).json({ ok: false,
+                        msg: "Invalid container name" });
+                    return;
+                }
+                if (endpoint) {
+                    const result = await callAgent<{ snapshots: string[] }>(server, endpoint, "getLxcSnapshots", name);
+                    res.json({ ok: true,
+                        snapshots: result.snapshots });
+                    return;
+                }
+                const snapshots = await LxcContainer.listSnapshots(server, name);
+                res.json({ ok: true,
+                    snapshots });
+            } catch (e) {
+                log.error("lxc-api", e);
+                res.status(500).json({ ok: false,
+                    msg: e instanceof Error ? e.message : "Internal server error" });
+            }
+        });
+
+        // POST /api/lxc/:name/snapshots - Create snapshot
+        router.post("/api/lxc/:name/snapshots", async (req: Request, res: Response) => {
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
+            try {
+                const { name } = req.params;
+                if (!CONTAINER_NAME_REGEX.test(name)) {
+                    res.status(400).json({ ok: false,
+                        msg: "Invalid container name" });
+                    return;
+                }
+                if (endpoint) {
+                    const result = await callAgent<{ snapshotName: string }>(server, endpoint, "createLxcSnapshot", name);
+                    res.status(201).json({ ok: true,
+                        msg: "Snapshot created",
+                        snapshotName: result.snapshotName });
+                    return;
+                }
+                const snapshotName = await LxcContainer.createSnapshot(server, name);
+                res.status(201).json({ ok: true,
+                    msg: "Snapshot created",
+                    snapshotName });
+            } catch (e) {
+                log.error("lxc-api", e);
+                res.status(500).json({ ok: false,
+                    msg: e instanceof Error ? e.message : "Failed to create snapshot" });
+            }
+        });
+
+        // DELETE /api/lxc/:name/snapshots/:snapName - Delete snapshot
+        router.delete("/api/lxc/:name/snapshots/:snapName", async (req: Request, res: Response) => {
+            const endpoint = (res.locals.lxcEndpoint as string) || "";
+            try {
+                const { name, snapName } = req.params;
+                if (!CONTAINER_NAME_REGEX.test(name)) {
+                    res.status(400).json({ ok: false,
+                        msg: "Invalid container name" });
+                    return;
+                }
+                if (!CONTAINER_NAME_REGEX.test(snapName)) {
+                    res.status(400).json({ ok: false,
+                        msg: "Invalid snapshot name" });
+                    return;
+                }
+                if (endpoint) {
+                    await callAgent(server, endpoint, "deleteLxcSnapshot", name, snapName);
+                    res.json({ ok: true,
+                        msg: "Snapshot deleted" });
+                    return;
+                }
+                await LxcContainer.deleteSnapshot(server, name, snapName);
+                res.json({ ok: true,
+                    msg: "Snapshot deleted" });
+            } catch (e) {
+                log.error("lxc-api", e);
+                res.status(500).json({ ok: false,
+                    msg: e instanceof Error ? e.message : "Failed to delete snapshot" });
+            }
+        });
+
         // DELETE /api/lxc/:name - Delete container
         router.delete("/api/lxc/:name", async (req: Request, res: Response) => {
             const endpoint = (res.locals.lxcEndpoint as string) || "";
@@ -422,7 +512,7 @@ export class LxcApiRouter extends Router {
                     await childProcessAsync.spawn("lxc-stop", [ "-n", name ], { encoding: "utf-8" });
                 }
 
-                await childProcessAsync.spawn("lxc-destroy", [ "-n", name ], { encoding: "utf-8" });
+                await childProcessAsync.spawn("lxc-destroy", [ "-n", name, "--snapshots" ], { encoding: "utf-8" });
                 await server.sendLxcContainerList();
                 res.json({ ok: true,
                     msg: "Container deleted" });

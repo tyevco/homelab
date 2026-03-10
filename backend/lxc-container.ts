@@ -398,6 +398,27 @@ export class LxcContainer {
         await fsAsync.writeFile(configPath, existing + separator + "\n" + extra.trimEnd() + "\n");
     }
 
+    static async createSnapshot(_server: HomelabServer, containerName: string): Promise<string> {
+        if (!containerName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Container name can only contain [a-z][0-9] _ . - characters");
+        }
+        const before = await LxcContainer.listSnapshots(_server, containerName);
+        await childProcessAsync.spawn("lxc-snapshot", [ "-n", containerName ], { encoding: "utf-8" });
+        const after = await LxcContainer.listSnapshots(_server, containerName);
+        const newSnap = after.find((s: string) => !before.includes(s));
+        return newSnap || after[after.length - 1] || "";
+    }
+
+    static async deleteSnapshot(_server: HomelabServer, containerName: string, snapshotName: string): Promise<void> {
+        if (!containerName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Container name can only contain [a-z][0-9] _ . - characters");
+        }
+        if (!snapshotName.match(/^[a-z0-9_.-]+$/)) {
+            throw new ValidationError("Snapshot name can only contain [a-z][0-9] _ . - characters");
+        }
+        await childProcessAsync.spawn("lxc-snapshot", [ "-n", containerName, "-d", snapshotName ], { encoding: "utf-8" });
+    }
+
     static async listSnapshots(_server: HomelabServer, containerName: string): Promise<string[]> {
         if (!containerName.match(/^[a-z0-9_.-]+$/)) {
             throw new ValidationError("Container name can only contain [a-z][0-9] _ . - characters");
@@ -474,7 +495,7 @@ export class LxcContainer {
         }
 
         const terminalName = getLxcTerminalName(socket.endpoint, this.name);
-        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-destroy", [ "-n", this.name ], LXC_PATH);
+        const exitCode = await Terminal.exec(this.server, socket, terminalName, "lxc-destroy", [ "-n", this.name, "--snapshots" ], LXC_PATH);
         if (exitCode !== 0) {
             throw new Error("Failed to destroy LXC container, please check the terminal output for more information.");
         }
