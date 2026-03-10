@@ -153,7 +153,19 @@ export class LxcSocketHandler extends AgentSocketHandler {
                     throw new ValidationError("Container name must be a string");
                 }
 
-                const container = await LxcContainer.getContainer(server, name);
+                let container;
+                try {
+                    container = await LxcContainer.getContainer(server, name);
+                } catch (e) {
+                    // Container already gone — treat as success
+                    server.sendLxcContainerList();
+                    callbackResult({
+                        ok: true,
+                        msg: "Destroyed",
+                        msgi18n: true,
+                    }, callback);
+                    return;
+                }
 
                 try {
                     await container.delete(socket);

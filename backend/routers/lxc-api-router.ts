@@ -392,20 +392,26 @@ export class LxcApiRouter extends Router {
                 if (endpoint) {
                     try {
                         await callAgent(server, endpoint, "deleteLxcContainer", name);
-                        res.json({ ok: true,
-                            msg: "Container deleted" });
                     } catch (e) {
-                        res.status(500).json({ ok: false,
-                            msg: e instanceof Error ? e.message : "Failed to delete container" });
+                        const msg = e instanceof Error ? e.message : "";
+                        // If the container is already gone, treat as success
+                        if (!msg.includes("not found")) {
+                            res.status(500).json({ ok: false,
+                                msg: msg || "Failed to delete container" });
+                            return;
+                        }
                     }
+                    res.json({ ok: true,
+                        msg: "Container deleted" });
                     return;
                 }
 
                 try {
                     await LxcContainer.getContainer(server, name);
                 } catch (e) {
-                    res.status(404).json({ ok: false,
-                        msg: "Container not found" });
+                    // Container already gone — treat delete as success
+                    res.json({ ok: true,
+                        msg: "Container already deleted" });
                     return;
                 }
 
