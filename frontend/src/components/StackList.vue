@@ -154,7 +154,7 @@ export default {
                     const loweredSearchText = this.searchText.toLowerCase();
                     searchTextMatch =
                         stack.name.toLowerCase().includes(loweredSearchText)
-                        || stack.tags.find(tag => tag.name.toLowerCase().includes(loweredSearchText)
+                        || stack.tags?.find(tag => tag.name.toLowerCase().includes(loweredSearchText)
                             || tag.value?.toLowerCase().includes(loweredSearchText));
                 }
 
@@ -167,7 +167,7 @@ export default {
                 // filter by tags
                 let tagsMatch = true;
                 if (this.filterState.tags != null && this.filterState.tags.length > 0) {
-                    tagsMatch = stack.tags.map(tag => tag.tag_id) // convert to array of tag IDs
+                    tagsMatch = (stack.tags || []).map(tag => tag.tag_id) // convert to array of tag IDs
                         .filter(stackTagId => this.filterState.tags.includes(stackTagId)) // perform Array Intersaction between filter and stack's tags
                         .length > 0;
                 }

@@ -143,7 +143,7 @@ export function intHash(str : string, length = 10) : number {
     for (let i = 0; i < str.length; i++) {
         hash += str.charCodeAt(i);
     }
-    // Normalize the hash to the range [0, 10]
+    // Normalize the hash to the range [0, length-1]
     return (hash % length + length) % length; // Ensure the result is non-negative
 }
 
@@ -392,6 +392,13 @@ export function parseDockerPort(input : string, hostname : string) {
     }
 
     let portInt = parseInt(port, 10);
+
+    if (isNaN(portInt)) {
+        return {
+            url: "",
+            display: display,
+        };
+    }
 
     if (portInt === 443) {
         protocol = "https";

@@ -860,7 +860,9 @@ export default {
         },
 
         removeExtraFile(index) {
-            this.stack.extraFiles.splice(index, 1);
+            if (this.stack.extraFiles) {
+                this.stack.extraFiles.splice(index, 1);
+            }
         },
 
     }

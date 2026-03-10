@@ -38,7 +38,9 @@ export default defineComponent({
         },
 
         theme(to, from) {
-            document.body.classList.remove(from);
+            if (from) {
+                document.body.classList.remove(from);
+            }
             document.body.classList.add(this.theme);
             this.updateThemeColorMeta();
         },
@@ -48,7 +50,9 @@ export default defineComponent({
         },
 
         heartbeatBarTheme(to, from) {
-            document.body.classList.remove(from);
+            if (from) {
+                document.body.classList.remove(from);
+            }
             document.body.classList.add(this.heartbeatBarTheme);
         }
     },

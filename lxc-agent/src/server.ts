@@ -81,6 +81,10 @@ export function createAgentServer(config: AgentConfig): { io: Server; httpServer
     // Initial scan, then periodic rescan
     rescan().then(() => {
         setInterval(rescan, config.scanInterval * 1000);
+    }).catch((e) => {
+        console.error("[agent] Initial scan failed:", e instanceof Error ? e.message : e);
+        // Still set up periodic rescans so recovery is possible
+        setInterval(rescan, config.scanInterval * 1000);
     });
 
     io.on("connection", (socket: Socket) => {

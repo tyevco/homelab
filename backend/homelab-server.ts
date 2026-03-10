@@ -350,9 +350,6 @@ export class HomelabServer {
 
         });
 
-        this.io.on("disconnect", () => {
-
-        });
 
         if (isDev) {
             setInterval(() => {
