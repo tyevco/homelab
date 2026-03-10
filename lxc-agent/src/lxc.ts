@@ -235,7 +235,7 @@ export async function deleteContainer(socket: SocketLike, endpoint: string, name
         console.log(`[lxc] Stopping ${name} before delete`);
         await AgentTerminal.exec(socket, termName, "lxc-stop", [ "-n", name ], LXC_PATH);
     }
-    const code = await AgentTerminal.exec(socket, termName, "lxc-destroy", [ "-n", name ], LXC_PATH);
+    const code = await AgentTerminal.exec(socket, termName, "lxc-destroy", [ "-n", name, "--snapshots" ], LXC_PATH);
     if (code !== 0) {
         throw new Error("Failed to destroy LXC container");
     }
@@ -347,6 +347,27 @@ export async function listSnapshots(containerName: string): Promise<string[]> {
     } catch {
         return [];
     }
+}
+
+export async function createSnapshot(containerName: string): Promise<string> {
+    if (!/^[a-z0-9_.-]+$/.test(containerName)) {
+        throw new Error("Invalid container name");
+    }
+    const before = await listSnapshots(containerName);
+    await spawn("lxc-snapshot", [ "-n", containerName ], { encoding: "utf-8" });
+    const after = await listSnapshots(containerName);
+    const newSnap = after.find(s => !before.includes(s));
+    return newSnap || after[after.length - 1] || "";
+}
+
+export async function deleteSnapshot(containerName: string, snapshotName: string): Promise<void> {
+    if (!/^[a-z0-9_.-]+$/.test(containerName)) {
+        throw new Error("Invalid container name");
+    }
+    if (!/^[a-z0-9_.-]+$/.test(snapshotName)) {
+        throw new Error("Invalid snapshot name");
+    }
+    await spawn("lxc-snapshot", [ "-n", containerName, "-d", snapshotName ], { encoding: "utf-8" });
 }
 
 async function appendConfig(name: string, extra: string): Promise<void> {

@@ -294,6 +294,42 @@ export class LxcSocketHandler extends AgentSocketHandler {
             }
         });
 
+        agentSocket.on("createLxcSnapshot", async (containerName: unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof containerName !== "string") {
+                    throw new ValidationError("Container name must be a string");
+                }
+
+                const snapshotName = await LxcContainer.createSnapshot(server, containerName);
+                callbackResult({ ok: true,
+                    msg: "Snapshot created",
+                    snapshotName }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
+        agentSocket.on("deleteLxcSnapshot", async (containerName: unknown, snapshotName: unknown, callback) => {
+            try {
+                checkLogin(socket);
+
+                if (typeof containerName !== "string") {
+                    throw new ValidationError("Container name must be a string");
+                }
+                if (typeof snapshotName !== "string") {
+                    throw new ValidationError("Snapshot name must be a string");
+                }
+
+                await LxcContainer.deleteSnapshot(server, containerName, snapshotName);
+                callbackResult({ ok: true,
+                    msg: "Snapshot deleted" }, callback);
+            } catch (e) {
+                callbackError(e, callback);
+            }
+        });
+
         agentSocket.on("getLxcDistributions", async (callback) => {
             try {
                 checkLogin(socket);

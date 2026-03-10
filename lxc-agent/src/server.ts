@@ -324,6 +324,32 @@ async function dispatch(socket: Socket, endpoint: string, eventName: string, arg
                 break;
             }
 
+            case "createLxcSnapshot": {
+                const [ containerName ] = args as [string];
+                if (typeof containerName !== "string") {
+                    throw new Error("Container name must be a string");
+                }
+                const snapshotName = await lxc.createSnapshot(containerName);
+                callback?.({ ok: true,
+                    msg: "Snapshot created",
+                    snapshotName });
+                break;
+            }
+
+            case "deleteLxcSnapshot": {
+                const [ containerName, snapshotName ] = args as [string, string];
+                if (typeof containerName !== "string") {
+                    throw new Error("Container name must be a string");
+                }
+                if (typeof snapshotName !== "string") {
+                    throw new Error("Snapshot name must be a string");
+                }
+                await lxc.deleteSnapshot(containerName, snapshotName);
+                callback?.({ ok: true,
+                    msg: "Snapshot deleted" });
+                break;
+            }
+
             case "getLxcDistributions": {
                 const distributions = await lxc.getDistributions();
                 callback?.({ ok: true,
