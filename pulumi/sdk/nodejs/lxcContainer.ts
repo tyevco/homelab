@@ -32,6 +32,8 @@ export class LxcContainer extends pulumi.CustomResource {
   public readonly config!: pulumi.Output<string>;
   public readonly autostart!: pulumi.Output<boolean>;
   public readonly status!: pulumi.Output<number>;
+  /** Human-readable state: "running", "stopped", "frozen", or "unknown". */
+  public readonly stateText!: pulumi.Output<string>;
   public readonly ip!: pulumi.Output<string>;
   public readonly pid!: pulumi.Output<number>;
   public readonly memory!: pulumi.Output<string>;
@@ -42,6 +44,7 @@ export class LxcContainer extends pulumi.CustomResource {
   constructor(name: string, args: LxcContainerArgs, opts?: pulumi.CustomResourceOptions) {
     super("homelab:index:LxcContainer", name, {
       status: undefined,
+      stateText: undefined,
       ip: undefined,
       pid: undefined,
       memory: undefined,
