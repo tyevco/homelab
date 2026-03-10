@@ -40,6 +40,26 @@ describe("util-server", () => {
             const socket = { userID: 42 } as unknown as HomelabSocket;
             expect(() => checkLogin(socket)).not.toThrow();
         });
+
+        it("should throw when userID is negative", () => {
+            const socket = { userID: -1 } as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).toThrow("You are not logged in.");
+        });
+
+        it("should throw when userID is a string", () => {
+            const socket = { userID: "42" } as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).toThrow("You are not logged in.");
+        });
+
+        it("should throw when userID is null", () => {
+            const socket = { userID: null } as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).toThrow("You are not logged in.");
+        });
+
+        it("should accept valid positive integer userID", () => {
+            const socket = { userID: 1 } as unknown as HomelabSocket;
+            expect(() => checkLogin(socket)).not.toThrow();
+        });
     });
 
     describe("doubleCheckPassword", () => {

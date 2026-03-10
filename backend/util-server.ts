@@ -43,7 +43,7 @@ export interface Config extends Arguments {
 }
 
 export function checkLogin(socket : HomelabSocket) {
-    if (!socket.userID) {
+    if (!socket.userID || typeof socket.userID !== "number" || socket.userID <= 0) {
         throw new Error("You are not logged in.");
     }
 }

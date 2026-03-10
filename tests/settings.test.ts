@@ -281,4 +281,31 @@ describe("Settings", () => {
             expect(Settings.cacheCleaner).toBeUndefined();
         });
     });
+
+    describe("startCacheCleaner", () => {
+        it("should start the cache cleaner interval", () => {
+            expect(Settings.cacheCleaner).toBeUndefined();
+            Settings.startCacheCleaner();
+            expect(Settings.cacheCleaner).toBeDefined();
+        });
+
+        it("should not create multiple intervals when called multiple times", () => {
+            Settings.startCacheCleaner();
+            const firstCleaner = Settings.cacheCleaner;
+            Settings.startCacheCleaner();
+            const secondCleaner = Settings.cacheCleaner;
+            // Should be the exact same interval reference
+            expect(firstCleaner).toBe(secondCleaner);
+        });
+
+        it("should be idempotent - only one interval exists after concurrent-like calls", () => {
+            Settings.startCacheCleaner();
+            Settings.startCacheCleaner();
+            Settings.startCacheCleaner();
+            expect(Settings.cacheCleaner).toBeDefined();
+            // Stopping once should be sufficient
+            Settings.stopCacheCleaner();
+            expect(Settings.cacheCleaner).toBeUndefined();
+        });
+    });
 });

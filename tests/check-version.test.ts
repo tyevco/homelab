@@ -141,6 +141,27 @@ describe("check-version", () => {
             expect(checkVersion.latestVersion).toBeUndefined();
         });
 
+        it("should pass an AbortSignal timeout to fetch", async () => {
+            vi.mocked(Settings.get).mockImplementation(async (key: string) => {
+                if (key === "checkUpdate") {
+                    return true;
+                }
+                if (key === "checkBeta") {
+                    return false;
+                }
+                return null;
+            });
+            mockFetch.mockResolvedValue({
+                json: () => Promise.resolve({ slow: "1.0.0" }),
+            });
+
+            await checkVersion.startInterval();
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            const fetchCall = mockFetch.mock.calls[0];
+            expect(fetchCall[1]).toBeDefined();
+            expect(fetchCall[1].signal).toBeDefined();
+        });
+
         it("should set up an interval", async () => {
             vi.mocked(Settings.get).mockResolvedValue(false);
             await checkVersion.startInterval();

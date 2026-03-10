@@ -219,6 +219,80 @@ describe("Terminal", () => {
             expect(() => terminal.start()).not.toThrow();
         });
     });
+
+    describe("start clears previous intervals", () => {
+        it("should clear previous intervals before creating new ones", () => {
+            const terminal = new Terminal(mockServer, "interval-leak", "bash", [], "/tmp");
+            const internals = terminal as unknown as Record<string, unknown>;
+
+            // Simulate intervals that were previously set (e.g. from an error path)
+            const fakeInterval1 = setInterval(() => {}, 100000);
+            const fakeInterval2 = setInterval(() => {}, 100000);
+            internals["kickDisconnectedClientsInterval"] = fakeInterval1;
+            internals["keepAliveInterval"] = fakeInterval2;
+
+            // start() will clear the old intervals before attempting to spawn
+            // (spawn will fail since it's mocked, but intervals should be cleared first)
+            terminal.start();
+
+            // After start, the old intervals should have been cleared and
+            // new ones should be set (different references)
+            const newKickInterval = internals["kickDisconnectedClientsInterval"];
+            expect(newKickInterval).toBeDefined();
+            expect(newKickInterval).not.toBe(fakeInterval1);
+
+            // Clean up
+            clearInterval(fakeInterval1);
+            clearInterval(fakeInterval2);
+            clearInterval(newKickInterval as NodeJS.Timeout);
+            const newKeepAlive = internals["keepAliveInterval"];
+            if (newKeepAlive) {
+                clearInterval(newKeepAlive as NodeJS.Timeout);
+            }
+        });
+    });
+
+    describe("exit handler guard", () => {
+        it("should only call the exit callback once even if exit fires twice", () => {
+            const terminal = new Terminal(mockServer, "exit-guard", "bash", [], "/tmp");
+            const callback = vi.fn();
+            terminal.onExit(callback);
+
+            // Access the exit handler directly
+            const exitFn = (terminal as unknown as Record<string, (res: { exitCode: number }) => void>)["exit"];
+
+            // First call should invoke callback
+            exitFn({ exitCode: 0 });
+            expect(callback).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledWith(0);
+
+            // Second call should be a no-op (terminal already removed from map)
+            exitFn({ exitCode: 1 });
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it("should remove terminal from map on exit", () => {
+            const terminal = new Terminal(mockServer, "exit-cleanup", "bash", [], "/tmp");
+            expect(Terminal.getTerminal("exit-cleanup")).toBe(terminal);
+
+            const exitFn = (terminal as unknown as Record<string, (res: { exitCode: number }) => void>)["exit"];
+            exitFn({ exitCode: 0 });
+
+            expect(Terminal.getTerminal("exit-cleanup")).toBeUndefined();
+        });
+
+        it("should notify all sockets on exit", () => {
+            const terminal = new Terminal(mockServer, "exit-notify", "bash", [], "/tmp");
+            terminal.join(mockSocket);
+            terminal.join(mockSocket2);
+
+            const exitFn = (terminal as unknown as Record<string, (res: { exitCode: number }) => void>)["exit"];
+            exitFn({ exitCode: 42 });
+
+            expect(mockSocket.emitAgent).toHaveBeenCalledWith("terminalExit", "exit-notify", 42);
+            expect(mockSocket2.emitAgent).toHaveBeenCalledWith("terminalExit", "exit-notify", 42);
+        });
+    });
 });
 
 describe("MainTerminal", () => {

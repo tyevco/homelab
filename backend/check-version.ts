@@ -21,7 +21,7 @@ class CheckVersion {
             log.debug("update-checker", "Retrieving latest versions");
 
             try {
-                const res = await fetch(CHECK_URL);
+                const res = await fetch(CHECK_URL, { signal: AbortSignal.timeout(15000) });
                 const data = await res.json();
 
                 // For debug
