@@ -296,6 +296,23 @@ describe("util-common", () => {
             expect(result.url).toBe("");
             expect(result.display).toBe("abc");
         });
+
+        it("should correctly parse IP:portRange:containerPortRange without truncating the IP", () => {
+            // Previously the dash search was performed on part1 instead of hostPart,
+            // causing the IP address to be truncated when a port range was present.
+            const result = parseDockerPort("192.168.1.5:5000-5010:5000", "localhost");
+            expect(result.url).toBe("http://192.168.1.5:5000");
+        });
+
+        it("should correctly parse hostPortRange:containerPort without IP", () => {
+            const result = parseDockerPort("6000-6010:6000", "localhost");
+            expect(result.url).toBe("http://localhost:6000");
+        });
+
+        it("should handle IP:singlePort:containerPort without dash", () => {
+            const result = parseDockerPort("10.0.0.1:8080:80", "localhost");
+            expect(result.url).toBe("http://10.0.0.1:8080");
+        });
     });
 
     describe("envsubstYAML", () => {

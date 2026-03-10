@@ -9,7 +9,11 @@ export class AgentSocket {
     call(eventName : string, ...args : unknown[]) {
         const callback = this.eventList.get(eventName);
         if (callback) {
-            callback(...args);
+            try {
+                callback(...args);
+            } catch (e) {
+                console.error(`AgentSocket: error in handler for event "${eventName}":`, e instanceof Error ? e.message : e);
+            }
         }
     }
 }

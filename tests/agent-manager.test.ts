@@ -183,6 +183,21 @@ describe("AgentManager", () => {
         it("should handle empty endpoint list", () => {
             expect(() => manager.emitToAllEndpoints("event")).not.toThrow();
         });
+
+        it("should handle non-Error rejection without crashing", async () => {
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+            const internals = manager as unknown as Record<string, Record<string, unknown>>;
+            // Set up an endpoint that is not connected so emitToEndpoint rejects
+            internals["agentSocketList"]["ep1"] = {
+                connected: false,
+                emit: vi.fn(),
+            } as never;
+
+            // emitToAllEndpoints is fire-and-forget; it should not crash
+            // even when the rejection is not an Error instance
+            expect(() => manager.emitToAllEndpoints("event", "data")).not.toThrow();
+            warnSpy.mockRestore();
+        });
     });
 
     describe("connectAll", () => {

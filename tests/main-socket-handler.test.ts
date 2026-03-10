@@ -257,6 +257,20 @@ describe("MainSocketHandler", () => {
                 msg: "authInvalidToken",
             }));
         });
+
+        it("should send callback even when a non-Error is thrown", async () => {
+            const jwt = (await import("jsonwebtoken")).default;
+            vi.mocked(jwt.verify).mockImplementation(() => {
+                throw "string error";  // eslint-disable-line no-throw-literal
+            });
+
+            const callback = vi.fn();
+            await handlers["loginByToken"]("bad-token", callback);
+            expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+                ok: false,
+                msg: "authInvalidToken",
+            }));
+        });
     });
 
     describe("changePassword", () => {
