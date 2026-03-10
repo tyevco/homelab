@@ -19,6 +19,8 @@ vi.mock("../lxc-agent/src/lxc", () => ({
     createContainer: vi.fn().mockResolvedValue(undefined),
     cloneContainer: vi.fn().mockResolvedValue(undefined),
     listSnapshots: vi.fn().mockResolvedValue([]),
+    createSnapshot: vi.fn().mockResolvedValue("snap0"),
+    deleteSnapshot: vi.fn().mockResolvedValue(undefined),
     getDistributions: vi.fn().mockResolvedValue([]),
     joinExecTerminal: vi.fn(),
 }));
