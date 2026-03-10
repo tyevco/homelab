@@ -172,6 +172,32 @@ describe("util-common", () => {
         it("should throw when range exceeds 2^32", () => {
             expect(() => getCryptoRandomInt(0, Math.pow(2, 32) + 1)).toThrow("Range is too large");
         });
+
+        it("should handle range of 0 (min equals max)", () => {
+            for (let i = 0; i < 10; i++) {
+                expect(getCryptoRandomInt(7, 7)).toBe(7);
+            }
+        });
+
+        it("should handle range of 1", () => {
+            const results = new Set<number>();
+            for (let i = 0; i < 100; i++) {
+                results.add(getCryptoRandomInt(0, 1));
+            }
+            expect(results.has(0)).toBe(true);
+            expect(results.has(1)).toBe(true);
+            expect(results.size).toBe(2);
+        });
+
+        it("should not cause stack overflow with large iteration counts", () => {
+            // Previously used recursion which could overflow the stack.
+            // Now uses iteration with a max attempts limit.
+            expect(() => {
+                for (let i = 0; i < 1000; i++) {
+                    getCryptoRandomInt(0, 100);
+                }
+            }).not.toThrow();
+        });
     });
 
     describe("parseDockerPort", () => {

@@ -199,20 +199,23 @@ export function getCryptoRandomInt(min: number, max: number):number {
         tmpRange = tmpRange >>> 1;
     }
 
-    const bytes = randomBytes(bytesNeeded);
-    let randomValue = 0;
+    const MAX_ATTEMPTS = 256;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        const bytes = randomBytes(bytesNeeded);
+        let randomValue = 0;
 
-    for (let i = 0; i < bytesNeeded; i++) {
-        randomValue |= bytes[i] << 8 * i;
+        for (let i = 0; i < bytesNeeded; i++) {
+            randomValue |= bytes[i] << 8 * i;
+        }
+
+        randomValue = randomValue & mask;
+
+        if (randomValue <= range) {
+            return min + randomValue;
+        }
     }
 
-    randomValue = randomValue & mask;
-
-    if (randomValue <= range) {
-        return min + randomValue;
-    } else {
-        return getCryptoRandomInt(min, max);
-    }
+    throw new Error("Failed to generate a random number within range after maximum attempts");
 }
 
 export function getComposeTerminalName(endpoint : string, stack : string) {

@@ -83,6 +83,10 @@ export class Terminal {
             return;
         }
 
+        // Clear any previously set intervals to prevent leaks
+        clearInterval(this.kickDisconnectedClientsInterval);
+        clearInterval(this.keepAliveInterval);
+
         this.kickDisconnectedClientsInterval = setInterval(() => {
             for (const socketID in this.socketList) {
                 const socket = this.socketList[socketID];
@@ -150,6 +154,11 @@ export class Terminal {
      * @param res
      */
     protected exit = (res : {exitCode: number, signal?: number | undefined}) => {
+        // Guard against being called multiple times
+        if (!Terminal.terminalMap.has(this.name)) {
+            return;
+        }
+
         for (const socketID in this.socketList) {
             const socket = this.socketList[socketID];
             socket.emitAgent("terminalExit", this.name, res.exitCode);
@@ -165,7 +174,9 @@ export class Terminal {
         clearInterval(this.kickDisconnectedClientsInterval);
 
         if (this.callback) {
-            this.callback(res.exitCode);
+            const cb = this.callback;
+            this.callback = undefined;
+            cb(res.exitCode);
         }
     };
 

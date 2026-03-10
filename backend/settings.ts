@@ -24,6 +24,25 @@ export class Settings {
     static cacheCleaner? : NodeJS.Timeout;
 
     /**
+     * Start the cache cleaner interval if not already running.
+     * Separated from get() to avoid race conditions with concurrent calls.
+     */
+    static startCacheCleaner() {
+        if (Settings.cacheCleaner) {
+            return;
+        }
+        Settings.cacheCleaner = setInterval(() => {
+            log.debug("settings", "Cache Cleaner is just started.");
+            for (const key in Settings.cacheList) {
+                if (Date.now() - Settings.cacheList[key].timestamp > 60 * 1000) {
+                    log.debug("settings", "Cache Cleaner deleted: " + key);
+                    delete Settings.cacheList[key];
+                }
+            }
+        }, 60 * 1000);
+    }
+
+    /**
      * Retrieve value of setting based on key
      * @param key Key of setting to retrieve
      * @returns Value
@@ -31,18 +50,7 @@ export class Settings {
     static async get(key : string) {
 
         // Start cache clear if not started yet
-        if (!Settings.cacheCleaner) {
-            Settings.cacheCleaner = setInterval(() => {
-                log.debug("settings", "Cache Cleaner is just started.");
-                for (const key in Settings.cacheList) {
-                    if (Date.now() - Settings.cacheList[key].timestamp > 60 * 1000) {
-                        log.debug("settings", "Cache Cleaner deleted: " + key);
-                        delete Settings.cacheList[key];
-                    }
-                }
-
-            }, 60 * 1000);
-        }
+        Settings.startCacheCleaner();
 
         // Query from cache
         if (key in Settings.cacheList) {
