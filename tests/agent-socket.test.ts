@@ -62,6 +62,38 @@ describe("AgentSocket", () => {
             socket.call("event2", "data2");
             expect(handler2).toHaveBeenCalledWith("data2");
         });
+
+        it("should catch and log errors thrown by handlers without crashing", () => {
+            const socket = new AgentSocket();
+            const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+            socket.on("failing", () => {
+                throw new Error("handler error");
+            });
+
+            expect(() => socket.call("failing")).not.toThrow();
+            expect(errorSpy).toHaveBeenCalledWith(
+                expect.stringContaining("error in handler for event \"failing\""),
+                "handler error"
+            );
+            errorSpy.mockRestore();
+        });
+
+        it("should catch non-Error thrown values from handlers", () => {
+            const socket = new AgentSocket();
+            const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+            socket.on("failing", () => {
+                throw "string error";  // eslint-disable-line no-throw-literal
+            });
+
+            expect(() => socket.call("failing")).not.toThrow();
+            expect(errorSpy).toHaveBeenCalledWith(
+                expect.stringContaining("error in handler for event \"failing\""),
+                "string error"
+            );
+            errorSpy.mockRestore();
+        });
     });
 
     describe("eventList", () => {

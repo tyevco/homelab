@@ -175,10 +175,10 @@ export class TerminalSocketHandler extends AgentSocketHandler {
                 }
 
                 if (typeof rows !== "number") {
-                    throw new Error("Command must be a number.");
+                    throw new Error("Rows must be a number.");
                 }
                 if (typeof cols !== "number") {
-                    throw new Error("Command must be a number.");
+                    throw new Error("Cols must be a number.");
                 }
 
                 let terminal = Terminal.getTerminal(terminalName);

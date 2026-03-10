@@ -310,7 +310,7 @@ export class AgentManager {
         log.debug("agent-manager", "Emitting event to all endpoints");
         for (let endpoint in this.agentSocketList) {
             this.emitToEndpoint(endpoint, eventName, ...args).catch((e) => {
-                log.warn("agent-manager", e.message);
+                log.warn("agent-manager", e instanceof Error ? e.message : String(e));
             });
         }
     }

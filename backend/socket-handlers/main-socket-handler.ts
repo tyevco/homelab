@@ -106,13 +106,13 @@ export class MainSocketHandler extends SocketHandler {
                     });
                 }
             } catch (error) {
-                if (!(error instanceof Error)) {
+                if (error instanceof Error) {
+                    log.error("auth", `Invalid token. IP=${clientIP}`);
+                    if (error.message) {
+                        log.error("auth", error.message + ` IP=${clientIP}`);
+                    }
+                } else {
                     log.error("auth", "Unknown error: " + error);
-                    return;
-                }
-                log.error("auth", `Invalid token. IP=${clientIP}`);
-                if (error.message) {
-                    log.error("auth", error.message + ` IP=${clientIP}`);
                 }
                 callback({
                     ok: false,

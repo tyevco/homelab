@@ -374,11 +374,11 @@ export function parseDockerPort(input : string, hostname : string) {
         display = hostPart;
 
         // Check if it's a port range
-        const dash = part1.indexOf("-");
+        const dash = hostPart.indexOf("-");
 
         if (dash !== -1) {
             // Has dash, so it's a port range, use the first port
-            hostPart = part1.substring(0, dash);
+            hostPart = hostPart.substring(0, dash);
         }
 
         // Check if it has a ip (ip:port)
