@@ -96,7 +96,6 @@ library.add(
     faUndo,
     faPlusCircle,
     faAngleDown,
-    faLink,
     faWrench,
     faHeartbeat,
     faFilter,

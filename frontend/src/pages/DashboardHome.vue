@@ -336,6 +336,9 @@ export default {
          */
         updatePerPage() {
             const tableContainer = this.$refs.tableContainer;
+            if (!tableContainer) {
+                return;
+            }
             const tableContainerHeight = tableContainer.offsetHeight;
             const availableHeight = window.innerHeight - tableContainerHeight;
             const additionalPerPage = Math.floor(availableHeight / 58);

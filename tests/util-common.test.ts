@@ -254,9 +254,21 @@ describe("util-common", () => {
             expect(result.url).toBe("http://localhost:8000");
         });
 
-        it("should return NaN in URL for non-numeric port", () => {
+        it("should return empty URL for non-numeric port", () => {
             const result = parseDockerPort("abc", "localhost");
-            expect(result.url).toContain("NaN");
+            expect(result.url).toBe("");
+            expect(result.display).toBe("abc");
+        });
+
+        it("should return empty URL for empty string port", () => {
+            const result = parseDockerPort("", "localhost");
+            expect(result.url).toBe("");
+        });
+
+        it("should return empty URL for port mapping with non-numeric host port", () => {
+            const result = parseDockerPort("abc:8080", "localhost");
+            expect(result.url).toBe("");
+            expect(result.display).toBe("abc");
         });
     });
 
